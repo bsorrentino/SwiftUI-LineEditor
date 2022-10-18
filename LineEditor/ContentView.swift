@@ -9,7 +9,24 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        LineEditorView()
+        
+        NavigationStack {
+            LineEditorView()
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Line Editor")
+                .toolbar {
+                    ToolbarItem(placement:.navigationBarTrailing) {
+                        EditButton()
+//                        Button( action: {
+//                            
+//                        }, label: {
+//                            Label( "Edit", systemImage: "pencil.circle.fill")
+//                                .labelStyle(.titleAndIcon)
+//                        })
+                    }
+                }
+        }
+        
     }
 }
 
