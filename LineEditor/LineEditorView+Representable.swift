@@ -17,36 +17,13 @@ protocol SharedActions {
     func cloneItem()
 }
 
-struct LineEditorView: UIViewControllerRepresentable {
+struct LineEditorView<T: RawRepresentable<String>>: UIViewControllerRepresentable {
     
     @Environment(\.editMode) private var editMode
     
     typealias UIViewControllerType = Lines
     
-    
-    @State var items = [
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line3",
-    "line1",
-    "line2",
-    "line_last"
-    ]
+    @Binding var items:Array<T>
     
     func makeCoordinator() -> Coordinator {
         Coordinator( owner: self)
@@ -161,20 +138,17 @@ extension LineEditorView {
     
     class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate  {
         
-        let HEIGHT = 30.0
-        
+        private let ROW_HEIGHT = 30.0
+        private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
+
         var owner: LineEditorView
         
         let lines = Lines()
         
-        private var customKeyboardMinHeight = 300.0
         private var keyboardRect:CGRect = .zero
         private var keyboardCancellable:AnyCancellable?
         private var showCustomKeyboard:Bool = false
 
-        lazy var customKeybordView: UIView = {
-            makeCustomKeyboardView()
-        }()
         
         lazy var inputAccessoryView: UIView  = {
             makeInputAccesoryView()
@@ -192,6 +166,7 @@ extension LineEditorView {
             lines.tableView.dataSource = self
 
             keyboardCancellable = keyboardRectPublisher.sink {  [weak self] rect in
+                print( "keyboardRect: \(rect)")
                 self?.keyboardRect = rect
             }
 
@@ -209,8 +184,7 @@ extension LineEditorView {
                 return UITableViewCell()
             }
             
-            setupTextField( line.textField, withText: owner.items[ indexPath.row ])
-            
+            setupTextField( line.textField, withText: owner.items[ indexPath.row ].rawValue)
             
             return line
         }
@@ -247,7 +221,7 @@ extension LineEditorView {
         // MARK: - UITableViewDelegate
         
         func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-            HEIGHT
+            ROW_HEIGHT
         }
         
     }
@@ -289,8 +263,6 @@ extension LineEditorView.Coordinator {
                     return CGRect.zero
                 }
                 
-                self.customKeyboardMinHeight = max( self.customKeyboardMinHeight, rect.size.height)
-                
                 return rect
             }
         
@@ -300,6 +272,19 @@ extension LineEditorView.Coordinator {
         // 3.
         return Publishers.MergeMany(willShow, willHide).eraseToAnyPublisher()
                 
+    }
+    
+    private func makeCustomKeyboardRect() -> CGRect {
+        var customKeyboardRect = keyboardRect
+        
+        let MAGIC_NUMBER = 102.0
+        
+        customKeyboardRect.origin.y += MAGIC_NUMBER
+        customKeyboardRect.size.height = max( CUSTOM_KEYBOARD_MIN_HEIGHT, customKeyboardRect.size.height)
+        customKeyboardRect.size.height -= MAGIC_NUMBER
+        
+        return customKeyboardRect
+
     }
     
     // creation Input View
@@ -312,14 +297,9 @@ extension LineEditorView.Coordinator {
             })
         
         let controller = UIHostingController( rootView: keyboardView )
+                
+        controller.view.frame = makeCustomKeyboardRect()
         
-        
-        var customKeyboardRect = keyboardRect
-        let MAGIC_NUMBER = 104.0 // 104.0 // magic number .. height of keyboard top bar
-        
-        customKeyboardRect.origin.y += MAGIC_NUMBER
-        customKeyboardRect.size.height = max( self.customKeyboardMinHeight, customKeyboardRect.size.height) - MAGIC_NUMBER
-        controller.view.frame = customKeyboardRect
         return controller.view
  
     }
@@ -335,13 +315,15 @@ extension LineEditorView.Coordinator {
         showCustomKeyboard.toggle()
         
         if( showCustomKeyboard ) {
-            textField.inputView = customKeybordView
+            textField.inputView = makeCustomKeyboardView()
             
             Task {
 
-                try? await Task.sleep(for: .milliseconds(500))
+                let duration = UInt64(0.5 * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: duration )
+                
                 textField.reloadInputViews()
-                textField.becomeFirstResponder()
+                let _ = textField.becomeFirstResponder()
 
             }
         }
@@ -353,7 +335,6 @@ extension LineEditorView.Coordinator {
 
         
     }
-
 
 }
 
@@ -421,7 +402,7 @@ extension LineEditorView.Coordinator {
 }
 
 // MARK: - Coordinator::ContextMenu
-extension LineEditorView.Coordinator : UIContextMenuInteractionDelegate {
+extension LineEditorView.Coordinator /*: UIContextMenuInteractionDelegate */ {
     
     private func makeContextMenuView() -> UIView {
         
@@ -467,18 +448,18 @@ extension LineEditorView.Coordinator : UIContextMenuInteractionDelegate {
 
     // MARK: - UIContextMenuInteractionDelegate
             
-    func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration?
-    {
-        return UIContextMenuConfiguration(  identifier: nil,
-                                            previewProvider: nil ) { [weak self] _ in
-            return  self?.makeContextMenu()
-        }
-    }
+//    func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration?
+//    {
+//        return UIContextMenuConfiguration(  identifier: nil,
+//                                            previewProvider: nil ) { [weak self] _ in
+//            return  self?.makeContextMenu()
+//        }
+//    }
 
 }
 
 struct LineEditorView_Previews: PreviewProvider {
     static var previews: some View {
-        LineEditorView()
+        LineEditorView<Item>( items: Binding.constant( [] ))
     }
 }

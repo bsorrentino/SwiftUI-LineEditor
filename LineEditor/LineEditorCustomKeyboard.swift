@@ -37,6 +37,7 @@ struct LineEditorCustomKeyboard: View {
             .frame(maxWidth: .infinity )
             .background(Color.gray.opacity(0.1))
             .cornerRadius(25)
+            .padding()
             
             Button(action: onHide) {
                 Image(systemName: "xmark").foregroundColor(.black)

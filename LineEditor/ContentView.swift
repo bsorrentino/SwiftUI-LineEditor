@@ -8,24 +8,44 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State var items = [
+        Item( rawValue: "line1" ),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line3"),
+        Item( rawValue:"line1"),
+        Item( rawValue:"line2"),
+        Item( rawValue:"line_last")
+    ]
+    
+    
     var body: some View {
         
-        NavigationStack {
-            LineEditorView()
+        //NavigationStack {
+            LineEditorView<Item>(items: $items)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Line Editor")
                 .toolbar {
                     ToolbarItem(placement:.navigationBarTrailing) {
                         EditButton()
-//                        Button( action: {
-//                            
-//                        }, label: {
-//                            Label( "Edit", systemImage: "pencil.circle.fill")
-//                                .labelStyle(.titleAndIcon)
-//                        })
                     }
                 }
-        }
+        //}
         
     }
 }

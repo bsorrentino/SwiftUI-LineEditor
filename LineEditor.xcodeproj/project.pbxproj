@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A0038D28290068DF009A85BE /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0038D27290068DF009A85BE /* Item.swift */; };
 		A0A9E37928FDAC7400B7606C /* LineEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */; };
 		A0A9E37B28FDAC7400B7606C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E37A28FDAC7400B7606C /* ContentView.swift */; };
 		A0A9E37D28FDAC7700B7606C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0A9E37C28FDAC7700B7606C /* Assets.xcassets */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A0038D27290068DF009A85BE /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		A0A9E37528FDAC7400B7606C /* LineEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorApp.swift; sourceTree = "<group>"; };
 		A0A9E37A28FDAC7400B7606C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -55,6 +57,7 @@
 		A0A9E37728FDAC7400B7606C /* LineEditor */ = {
 			isa = PBXGroup;
 			children = (
+				A0038D27290068DF009A85BE /* Item.swift */,
 				A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */,
 				A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */,
 				A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */,
@@ -143,6 +146,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0038D28290068DF009A85BE /* Item.swift in Sources */,
 				A0CF1E4E29003274006F3D93 /* LineEditorCustomKeyboard.swift in Sources */,
 				A0A9E37B28FDAC7400B7606C /* ContentView.swift in Sources */,
 				A0A9E37928FDAC7400B7606C /* LineEditorApp.swift in Sources */,
@@ -283,6 +287,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -312,6 +317,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
