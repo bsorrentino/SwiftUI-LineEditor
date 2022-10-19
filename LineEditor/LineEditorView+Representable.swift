@@ -402,7 +402,7 @@ extension LineEditorView.Coordinator {
 }
 
 // MARK: - Coordinator::ContextMenu
-extension LineEditorView.Coordinator /*: UIContextMenuInteractionDelegate */ {
+extension LineEditorView.Coordinator  {
     
     private func makeContextMenuView() -> UIView {
         
@@ -446,20 +446,26 @@ extension LineEditorView.Coordinator /*: UIContextMenuInteractionDelegate */ {
 
     }
 
-    // MARK: - UIContextMenuInteractionDelegate
-            
-//    func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration?
-//    {
-//        return UIContextMenuConfiguration(  identifier: nil,
-//                                            previewProvider: nil ) { [weak self] _ in
-//            return  self?.makeContextMenu()
-//        }
-//    }
-
 }
 
 struct LineEditorView_Previews: PreviewProvider {
+    
+    public struct Item: RawRepresentable {
+        public var rawValue: String
+       
+        public init( rawValue: String  ) {
+            self.rawValue = rawValue
+        }
+    }
+    
     static var previews: some View {
-        LineEditorView<Item>( items: Binding.constant( [] ))
+        LineEditorView<Item>( items: Binding.constant( [
+            Item(rawValue: "Item1"),
+            Item(rawValue: "Item2"),
+            Item(rawValue: "Item3"),
+            Item(rawValue: "Item4"),
+            Item(rawValue: "Item5"),
+            Item(rawValue: "Item6")
+        ] ))
     }
 }
