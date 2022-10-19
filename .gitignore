@@ -2,4 +2,6 @@
 .DS_Store
 
 # xcode
-xcuserdata/
+
+LineEditor.xcodeproj/project.xcworkspace/xcuserdata/
+LineEditor.xcodeproj/xcuserdata/
