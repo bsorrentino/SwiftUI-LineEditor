@@ -12,6 +12,7 @@
 		A0A9E37D28FDAC7700B7606C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0A9E37C28FDAC7700B7606C /* Assets.xcassets */; };
 		A0A9E38028FDAC7700B7606C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0A9E37F28FDAC7700B7606C /* Preview Assets.xcassets */; };
 		A0A9E38728FDADFF00B7606C /* LineEditorView+Representable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */; };
+		A0CF1E4E29003274006F3D93 /* LineEditorCustomKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		A0A9E37C28FDAC7700B7606C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A0A9E37F28FDAC7700B7606C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LineEditorView+Representable.swift"; sourceTree = "<group>"; };
+		A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorCustomKeyboard.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +57,7 @@
 			children = (
 				A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */,
 				A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */,
+				A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */,
 				A0A9E37A28FDAC7400B7606C /* ContentView.swift */,
 				A0A9E37C28FDAC7700B7606C /* Assets.xcassets */,
 				A0A9E37E28FDAC7700B7606C /* Preview Content */,
@@ -140,6 +143,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0CF1E4E29003274006F3D93 /* LineEditorCustomKeyboard.swift in Sources */,
 				A0A9E37B28FDAC7400B7606C /* ContentView.swift in Sources */,
 				A0A9E37928FDAC7400B7606C /* LineEditorApp.swift in Sources */,
 				A0A9E38728FDADFF00B7606C /* LineEditorView+Representable.swift in Sources */,
