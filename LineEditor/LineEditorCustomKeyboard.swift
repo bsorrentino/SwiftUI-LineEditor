@@ -7,11 +7,36 @@
 
 import SwiftUI
 
+
+struct Symbol : KeyboardSymbol {
+    var description: String {
+        return id
+    }
+    
+    var id:String
+    private var _value:String?
+    private var _additionalValues:[String]?
+
+    var value: String {
+        get { _value ?? id }
+    }
+
+    var additionalValues: [String]? {
+        get { _additionalValues }
+    }
+
+    init( _ id:String, _ value:String? = nil, _ additionalValues: [String]? = nil) {
+        self.id = id
+        self._value = value
+        self._additionalValues = additionalValues
+    }
+    
+}
+
 struct LineEditorCustomKeyboard: View {
-    typealias Symbol = String
     
     var onHide:() -> Void
-    var onPressSymbol: (Symbol) -> Void
+    var onPressSymbol: (KeyboardSymbol) -> Void
     
     var body : some View{
         
@@ -47,7 +72,7 @@ struct LineEditorCustomKeyboard: View {
         }
     }
     
-    func ContentView( _ group: [[Symbol]] ) -> some View {
+    func ContentView( _ group: [[String]] ) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
             
             VStack(spacing: 15){
@@ -58,9 +83,10 @@ struct LineEditorCustomKeyboard: View {
                         
                         ForEach( Array(i.enumerated()), id: \.offset ) { cellIndex, symbol in
                             
+                            let symbol = Symbol(symbol, nil, [ "x1", "x2", "x3" ])
                             Button {
                                 
-                                onPressSymbol(symbol)
+                                onPressSymbol( symbol )
                                 
                             } label: {
                                 
@@ -91,8 +117,8 @@ fileprivate struct KeyButtonStyle: ButtonStyle {
 
 extension LineEditorCustomKeyboard {
     
-    func ButtonLabel( for group: [[Symbol]], row: Int, cell: Int, symbol: Symbol ) -> some View  {
-        Text(symbol)
+    func ButtonLabel( for group: [[String]], row: Int, cell: Int, symbol: KeyboardSymbol ) -> some View  {
+        Text(symbol.value)
             .font(.system(size: 16).bold())
     }
 }

@@ -8,38 +8,41 @@
 import SwiftUI
 import Combine
 
-protocol SharedActions {
+protocol KeyboardSymbol {
     
-    func addItemBelow()
+    var value: String {get}
     
-    func addItemAbove()
-
-    func cloneItem()
+    var additionalValues: [String]? {get}
 }
 
-struct LineEditorView<Element: RawRepresentable<String>>: UIViewControllerRepresentable {
+public struct LineEditorView<Element: RawRepresentable<String>>: UIViewControllerRepresentable {
     
     @Environment(\.editMode) private var editMode
     
-    typealias UIViewControllerType = Lines
+    public typealias UIViewControllerType = Lines
     
     @Binding var items:Array<Element>
     
-    func makeCoordinator() -> Coordinator {
+    public init( items: Binding<Array<Element>> ) {
+        self._items = items
+    }
+    public func makeCoordinator() -> Coordinator {
         Coordinator( owner: self)
     }
     
-    func makeUIViewController(context: Context) -> Lines {
+    public func makeUIViewController(context: Context) -> Lines {
         
         return context.coordinator.lines
     }
     
-    func updateUIViewController(_ uiViewController: Lines, context: Context) {
+    public func updateUIViewController(_ uiViewController: Lines, context: Context) {
         
         if let isEditing = editMode?.wrappedValue.isEditing {
             print( "editMode: \(isEditing)")
             uiViewController.isEditing = isEditing
         }
+        
+        items.forEach { print( $0 ) }
     }
 
 }
@@ -47,9 +50,14 @@ struct LineEditorView<Element: RawRepresentable<String>>: UIViewControllerRepres
 // MARK: - Data Model
 extension LineEditorView {
     
-    class Line : UITableViewCell, UITextFieldDelegate {
+    class TextField : UITextField {
+        var indexPath: IndexPath?
         
-        let textField = UITextField()
+    }
+    
+    public class Line : UITableViewCell {
+        
+        let textField = TextField()
         
         private var tableView:UITableView {
             guard let tableView = self.superview as? UITableView else {
@@ -67,7 +75,6 @@ extension LineEditorView {
             textField.autocapitalizationType = .none
             textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
-            textField.delegate = self
             contentView.addSubview(textField)
             
             setupContraints()
@@ -90,35 +97,21 @@ extension LineEditorView {
             NSLayoutConstraint.activate(constraints)
         }
         
-        // MARK: - UITextFieldDelegate
-        
-        func textFieldDidBeginEditing(_ textField: UITextField) {
-            if let indexPath = tableView.indexPath(for: self) {
-                tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
-            }
-        }
-        
-        func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-            if let indexPath = tableView.indexPath(for: self) {
-                tableView.deselectRow(at: indexPath, animated: false)
-            }
-        }
-        
     }
     
     
-    class Lines : UITableViewController {
+    public class Lines : UITableViewController {
         
         var timerCancellable: Cancellable?
         
-        override func viewDidLoad() {
+        public override func viewDidLoad() {
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
             tableView.separatorStyle = .none
 //            tableView.backgroundColor = UIColor.gray
             isEditing = false
         }
         
-        func findFirstTextFieldResponder() -> UITextField? {
+        func findFirstTextFieldResponder() -> LineEditorView.TextField? {
             
             return tableView.visibleCells
                 .compactMap { cell in
@@ -168,19 +161,18 @@ extension LineEditorView {
 extension LineEditorView {
     
     
-    class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate  {
+    public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate  {
         
         private let ROW_HEIGHT = 30.0
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        var owner: LineEditorView
+        let owner: LineEditorView
         
         let lines = Lines()
         
         private var keyboardRect:CGRect = .zero
         private var keyboardCancellable:AnyCancellable?
         private var showCustomKeyboard:Bool = false
-
         
         lazy var inputAccessoryView: UIView  = {
             makeInputAccesoryView()
@@ -206,7 +198,7 @@ extension LineEditorView {
         
         // MARK: - UITableViewDataSource
         
-        func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
             owner.items.count
         }
         
@@ -217,24 +209,26 @@ extension LineEditorView {
             return cell
         }
         
-        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
             
             guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
                 return disabledCell()
             }
             
-            setupTextField( line.textField, withText: owner.items[ indexPath.row ].rawValue)
+            setupTextField( line.textField,
+                            at: indexPath,
+                            withText: owner.items[ indexPath.row ].rawValue)
             
             print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
             
             return line
         }
         
-        func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        public func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
             true
         }
         
-        func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        public func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
             switch( editingStyle ) {
             case .delete:
                 print( "delete" )
@@ -250,28 +244,66 @@ extension LineEditorView {
             }
         }
         
-        func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+        public func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
             true
         }
         
-        func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
             owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
         }
         
         // MARK: - UITableViewDelegate
         
-        func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        
+        public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
             ROW_HEIGHT
         }
+     
+        // MARK: - UITextFieldDelegate
         
+        public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+                return false
+            }
+            
+            if let text = textField.text, let range = Range(range, in: text) {
+                if let item = Element(rawValue: text.replacingCharacters(in: range, with: string)) {
+                    owner.items[ indexPath.row ] = item
+                }
+            }
+
+            return true
+        }
+        
+        public func textFieldDidBeginEditing(_ textField: UITextField) {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+                return
+            }
+            lines.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+        }
+        
+        public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+                return
+            }
+            lines.tableView.deselectRow(at: indexPath, animated: false)
+        }
+
     }
     
 }
 
 
-// MARK: - Coordinator::SharedActions
-extension LineEditorView.Coordinator : SharedActions {
+// MARK: - Coordinator::ItemActions
+extension LineEditorView.Coordinator  {
     
+    func updateItem( at index: Int, withText text: String ) {
+        if let item = Element(rawValue: text ) {
+            owner.items[ index ] = item
+        }
+
+    }
     func addItemAbove() {
 
         if let indexPath = lines.tableView.indexPathForSelectedRow {
@@ -292,7 +324,33 @@ extension LineEditorView.Coordinator : SharedActions {
         }
 
     }
+
+    func addItemsBelow( _ items: [Element], at indexPath: IndexPath ) {
+        
+        let indexes = items
+            .enumerated()
+            .map { (index, item ) in
+                let i = IndexPath( row: indexPath.row + index + 1, section: indexPath.section)
+                owner.items.insert( item, at: i.row)
+                return i
+            }
+
+        lines.tableView.performBatchUpdates {
+                
+            self.lines.tableView.insertRows(at: indexes, with: .automatic )
+            
+        } completion: { [unowned self] success in
+
+            if let last = indexes.last {
+                self.lines.becomeFirstResponder(at: last, withRetries: 5)
+            }
+            
+            
+        }
+
+    }
     
+
     func addItemBelow() {
         
         if let indexPath = lines.tableView.indexPathForSelectedRow {
@@ -361,6 +419,29 @@ extension LineEditorView.Coordinator {
                 
     }
     
+    func processSymbol(_ symbol: KeyboardSymbol, on textField: LineEditorView.TextField) {
+        
+        // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
+        if let indexPath = textField.indexPath, let range = textField.selectedTextRange {
+            // From your question I assume that you do not want to replace a selection, only insert some text where the cursor is.
+            textField.replace(range, withText: symbol.value )
+            if let text = textField.text {
+                textField.sendActions(for: .valueChanged)
+                
+                let offset = indexPath.row
+                
+                updateItem(at: offset, withText: text )
+
+                if let values = symbol.additionalValues {
+                    
+                    addItemsBelow(values.compactMap { Element( rawValue: $0) }, at: indexPath)
+                }
+                // toggleCustomKeyobard()
+            }
+        }
+    }
+
+
     private func makeCustomKeyboardRect() -> CGRect {
         var customKeyboardRect = keyboardRect
         
@@ -375,12 +456,12 @@ extension LineEditorView.Coordinator {
     }
     
     // creation Input View
-    private func makeCustomKeyboardView() -> UIView  {
+    private func makeCustomKeyboardView( for textField: LineEditorView.TextField ) -> UIView  {
         
         let keyboardView = LineEditorCustomKeyboard(
             onHide: toggleCustomKeyobard,
-            onPressSymbol: {_ in
-                
+            onPressSymbol: { [weak self] symbol in
+                self?.processSymbol(symbol, on: textField)
             })
         
         let controller = UIHostingController( rootView: keyboardView )
@@ -402,7 +483,7 @@ extension LineEditorView.Coordinator {
         showCustomKeyboard.toggle()
         
         if( showCustomKeyboard ) {
-            textField.inputView = makeCustomKeyboardView()
+            textField.inputView = makeCustomKeyboardView( for: textField )
             
             DispatchQueue.main.async {
                 textField.reloadInputViews()
@@ -431,13 +512,15 @@ extension LineEditorView.Coordinator {
 
 
 // MARK: - Coordinator::UITextField
-extension LineEditorView.Coordinator {
+extension LineEditorView.Coordinator  {
     
-    private func setupTextField( _ textField: UITextField, withText text:String ) {
+    private func setupTextField( _ textField: LineEditorView.TextField, at indexPath: IndexPath, withText text: String ) {
          
-//            if textField.delegate == nil {
-//                textField.delegate = self
-//            }
+        textField.indexPath = indexPath
+        
+        if textField.delegate == nil {
+            textField.delegate = self
+        }
         
         if textField.rightView == nil {
             textField.rightView = rightView
