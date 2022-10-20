@@ -10,20 +10,20 @@ import Combine
 
 protocol SharedActions {
     
-    func addBelow()
+    func addItemBelow()
     
-    func addAbove()
+    func addItemAbove()
 
     func cloneItem()
 }
 
-struct LineEditorView<T: RawRepresentable<String>>: UIViewControllerRepresentable {
+struct LineEditorView<Element: RawRepresentable<String>>: UIViewControllerRepresentable {
     
     @Environment(\.editMode) private var editMode
     
     typealias UIViewControllerType = Lines
     
-    @Binding var items:Array<T>
+    @Binding var items:Array<Element>
     
     func makeCoordinator() -> Coordinator {
         Coordinator( owner: self)
@@ -109,6 +109,7 @@ extension LineEditorView {
     
     class Lines : UITableViewController {
         
+        var timerCancellable: Cancellable?
         
         override func viewDidLoad() {
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
@@ -127,6 +128,37 @@ extension LineEditorView {
                 .first { textField in
                     return textField.isFirstResponder
                 }
+        }
+        
+        private func becomeFirstResponder( at indexPath: IndexPath ) -> Bool {
+            var done = false
+            if let cell = tableView.cellForRow(at: indexPath) as? LineEditorView.Line {
+                done  = cell.textField.becomeFirstResponder()
+            }
+            return done
+        }
+        
+        func becomeFirstResponder( at indexPath: IndexPath, withRetries retries: Int ) {
+            
+            timerCancellable?.cancel()
+            
+            if !becomeFirstResponder(at: indexPath) {
+                tableView.scrollToRow(at: indexPath, at: .bottom, animated: true);
+                
+                timerCancellable = Timer.publish(every: 0.5, on: .main, in: .default)
+                    .autoconnect()
+                    .prefix( max(retries,1) )
+                    .sink { [weak self] _ in
+                        
+                        if let self = self, self.becomeFirstResponder( at: indexPath)  {
+                            print( "becomeFirsResponder: done!")
+                            self.timerCancellable?.cancel()
+                        }
+
+                    }
+
+            }
+                
         }
     }
     
@@ -178,19 +210,28 @@ extension LineEditorView {
             owner.items.count
         }
         
+        private func disabledCell() -> UITableViewCell {
+            let cell =  UITableViewCell()
+            cell.selectionStyle = .none
+            cell.isUserInteractionEnabled = false
+            return cell
+        }
+        
         func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
             
             guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
-                return UITableViewCell()
+                return disabledCell()
             }
             
             setupTextField( line.textField, withText: owner.items[ indexPath.row ].rawValue)
+            
+            print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
             
             return line
         }
         
         func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-            return true
+            true
         }
         
         func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
@@ -210,14 +251,13 @@ extension LineEditorView {
         }
         
         func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-            return true
+            true
         }
         
         func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-            
             owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
-            
         }
+        
         // MARK: - UITableViewDelegate
         
         func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -232,21 +272,68 @@ extension LineEditorView {
 // MARK: - Coordinator::SharedActions
 extension LineEditorView.Coordinator : SharedActions {
     
-    func addBelow() {
-        
-    }
-    
-    func addAbove() {
-    }
-    
-    func cloneItem() {
+    func addItemAbove() {
+
         if let indexPath = lines.tableView.indexPathForSelectedRow {
             
-            let newItem = owner.items[ indexPath.row ]
+            if let newItem = Element(rawValue: "") {
+
+                lines.tableView.performBatchUpdates {
+                    owner.items.insert( newItem, at: indexPath.row )
+                    self.lines.tableView.insertRows(at: [indexPath], with: .automatic )
+                        
+                } completion: { [unowned self] success in
+                    
+                    self.lines.becomeFirstResponder(at: indexPath, withRetries: 0)
+                    
+                }
+
+            }
+        }
+
+    }
+    
+    func addItemBelow() {
+        
+        if let indexPath = lines.tableView.indexPathForSelectedRow {
             
-            owner.items.insert( newItem, at: indexPath.row )
+            if let newItem = Element(rawValue: "" ) {
             
-            lines.tableView.reloadData()
+                
+                let newIndexPath = IndexPath( row: indexPath.row + 1,
+                                              section: indexPath.section )
+
+                lines.tableView.performBatchUpdates {
+                    
+                    owner.items.insert( newItem, at: newIndexPath.row)
+                    self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
+                    
+                } completion: { [unowned self] success in
+
+                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
+                    
+                }
+            }
+        }
+    }
+
+    func cloneItem() {
+        
+        if let indexPath = lines.tableView.indexPathForSelectedRow {
+            
+            if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue ) {
+            
+                lines.tableView.performBatchUpdates {
+                    owner.items.insert( newItem, at: indexPath.row )
+                    self.lines.tableView.insertRows(at: [indexPath], with: .bottom )
+                        
+                } completion: { [unowned self] success in
+                    let newIndexPath = IndexPath( row: indexPath.row + 1,
+                                                  section: indexPath.section )
+                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 0)
+                }
+
+            }
         }
     }
 
@@ -317,15 +404,19 @@ extension LineEditorView.Coordinator {
         if( showCustomKeyboard ) {
             textField.inputView = makeCustomKeyboardView()
             
-            Task {
-
-                let duration = UInt64(0.5 * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: duration )
-                
+            DispatchQueue.main.async {
                 textField.reloadInputViews()
                 let _ = textField.becomeFirstResponder()
-
             }
+//            Task {
+//
+//                let duration = UInt64(0.5 * 1_000_000_000)
+//                try? await Task.sleep(nanoseconds: duration )
+//
+//                textField.reloadInputViews()
+//                let _ = textField.becomeFirstResponder()
+//
+//            }
         }
         else {
             textField.inputView = nil
@@ -375,7 +466,7 @@ extension LineEditorView.Coordinator {
         
         let addBelowTitle = NSLocalizedString("Add Below", comment: "")
         let addBelowAction = UIAction(title: addBelowTitle) { [weak self] action in
-            self?.addBelow()
+            self?.addItemBelow()
         }
         let addBelow = UIBarButtonItem(title: addBelowTitle,
                                        image: nil,
@@ -383,7 +474,7 @@ extension LineEditorView.Coordinator {
         
         let addAboveTitle = NSLocalizedString("Add Above", comment: "")
         let addAboveAction = UIAction(title: addBelowTitle) { [weak self] action in
-            self?.addAbove()
+            self?.addItemAbove()
         }
         let addAbove = UIBarButtonItem(title: addAboveTitle,
                                        image: nil,
@@ -429,12 +520,12 @@ extension LineEditorView.Coordinator  {
         let addAboveAction =
         UIAction(title: NSLocalizedString("Add Above", comment: ""),
                  image: UIImage(systemName: "arrow.up.square")) { [weak self] action in
-            self?.addAbove()
+            self?.addItemAbove()
         }
         let addBelowAction =
         UIAction(title: NSLocalizedString("Add Below", comment: ""),
                  image: UIImage(systemName: "arrow.down.square")) { [weak self]  action in
-            self?.addBelow()
+            self?.addItemBelow()
         }
         let cloneRowAction =
         UIAction(title: NSLocalizedString("Clone", comment: ""),
