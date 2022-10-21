@@ -7,24 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A0038D28290068DF009A85BE /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0038D27290068DF009A85BE /* Item.swift */; };
-		A0A9E37928FDAC7400B7606C /* LineEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */; };
-		A0A9E37B28FDAC7400B7606C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E37A28FDAC7400B7606C /* ContentView.swift */; };
-		A0A9E37D28FDAC7700B7606C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0A9E37C28FDAC7700B7606C /* Assets.xcassets */; };
-		A0A9E38028FDAC7700B7606C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0A9E37F28FDAC7700B7606C /* Preview Assets.xcassets */; };
-		A0A9E38728FDADFF00B7606C /* LineEditorView+Representable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */; };
-		A0CF1E4E29003274006F3D93 /* LineEditorCustomKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */; };
+		A0F3290C2902A1C700E0C47C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329062902A1C600E0C47C /* ContentView.swift */; };
+		A0F3290D2902A1C700E0C47C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F329082902A1C600E0C47C /* Preview Assets.xcassets */; };
+		A0F3290E2902A1C700E0C47C /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329092902A1C600E0C47C /* Item.swift */; };
+		A0F3290F2902A1C700E0C47C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F3290A2902A1C600E0C47C /* Assets.xcassets */; };
+		A0F329102902A1C700E0C47C /* LineEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */; };
+		A0F329182902A2EF00E0C47C /* LineEditor in Frameworks */ = {isa = PBXBuildFile; productRef = A0F329172902A2EF00E0C47C /* LineEditor */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A0038D27290068DF009A85BE /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
-		A0A9E37528FDAC7400B7606C /* LineEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorApp.swift; sourceTree = "<group>"; };
-		A0A9E37A28FDAC7400B7606C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A0A9E37C28FDAC7700B7606C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A0A9E37F28FDAC7700B7606C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LineEditorView+Representable.swift"; sourceTree = "<group>"; };
-		A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorCustomKeyboard.swift; sourceTree = "<group>"; };
+		A0A9E37528FDAC7400B7606C /* LineEditorSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditorSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0F329062902A1C600E0C47C /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A0F329082902A1C600E0C47C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A0F329092902A1C600E0C47C /* Item.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		A0F3290A2902A1C600E0C47C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LineEditorApp.swift; sourceTree = "<group>"; };
+		A0F329152902A2C900E0C47C /* LineEditor */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = LineEditor; path = ..; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +30,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0F329182902A2EF00E0C47C /* LineEditor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -41,47 +40,54 @@
 		A0A9E36C28FDAC7400B7606C = {
 			isa = PBXGroup;
 			children = (
-				A0A9E37728FDAC7400B7606C /* LineEditor */,
+				A0F329142902A2C900E0C47C /* Packages */,
+				A0F3290A2902A1C600E0C47C /* Assets.xcassets */,
+				A0F329062902A1C600E0C47C /* ContentView.swift */,
+				A0F329092902A1C600E0C47C /* Item.swift */,
+				A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */,
+				A0F329072902A1C600E0C47C /* Preview Content */,
 				A0A9E37628FDAC7400B7606C /* Products */,
+				A0F329162902A2EF00E0C47C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
 		A0A9E37628FDAC7400B7606C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A0A9E37528FDAC7400B7606C /* LineEditor.app */,
+				A0A9E37528FDAC7400B7606C /* LineEditorSample.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A0A9E37728FDAC7400B7606C /* LineEditor */ = {
+		A0F329072902A1C600E0C47C /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				A0038D27290068DF009A85BE /* Item.swift */,
-				A0A9E37828FDAC7400B7606C /* LineEditorApp.swift */,
-				A0A9E38628FDADFF00B7606C /* LineEditorView+Representable.swift */,
-				A0CF1E4D29003274006F3D93 /* LineEditorCustomKeyboard.swift */,
-				A0A9E37A28FDAC7400B7606C /* ContentView.swift */,
-				A0A9E37C28FDAC7700B7606C /* Assets.xcassets */,
-				A0A9E37E28FDAC7700B7606C /* Preview Content */,
-			);
-			path = LineEditor;
-			sourceTree = "<group>";
-		};
-		A0A9E37E28FDAC7700B7606C /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				A0A9E37F28FDAC7700B7606C /* Preview Assets.xcassets */,
+				A0F329082902A1C600E0C47C /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		A0F329142902A2C900E0C47C /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				A0F329152902A2C900E0C47C /* LineEditor */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		A0F329162902A2EF00E0C47C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A0A9E37428FDAC7400B7606C /* LineEditor */ = {
+		A0A9E37428FDAC7400B7606C /* LineEditorSample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A0A9E38328FDAC7700B7606C /* Build configuration list for PBXNativeTarget "LineEditor" */;
+			buildConfigurationList = A0A9E38328FDAC7700B7606C /* Build configuration list for PBXNativeTarget "LineEditorSample" */;
 			buildPhases = (
 				A0A9E37128FDAC7400B7606C /* Sources */,
 				A0A9E37228FDAC7400B7606C /* Frameworks */,
@@ -91,9 +97,12 @@
 			);
 			dependencies = (
 			);
-			name = LineEditor;
+			name = LineEditorSample;
+			packageProductDependencies = (
+				A0F329172902A2EF00E0C47C /* LineEditor */,
+			);
 			productName = LineEditor;
-			productReference = A0A9E37528FDAC7400B7606C /* LineEditor.app */;
+			productReference = A0A9E37528FDAC7400B7606C /* LineEditorSample.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -108,10 +117,11 @@
 				TargetAttributes = {
 					A0A9E37428FDAC7400B7606C = {
 						CreatedOnToolsVersion = 14.1;
+						LastSwiftMigration = 1400;
 					};
 				};
 			};
-			buildConfigurationList = A0A9E37028FDAC7400B7606C /* Build configuration list for PBXProject "LineEditor" */;
+			buildConfigurationList = A0A9E37028FDAC7400B7606C /* Build configuration list for PBXProject "LineEditorSample" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -124,7 +134,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A0A9E37428FDAC7400B7606C /* LineEditor */,
+				A0A9E37428FDAC7400B7606C /* LineEditorSample */,
 			);
 		};
 /* End PBXProject section */
@@ -134,8 +144,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0A9E38028FDAC7700B7606C /* Preview Assets.xcassets in Resources */,
-				A0A9E37D28FDAC7700B7606C /* Assets.xcassets in Resources */,
+				A0F3290F2902A1C700E0C47C /* Assets.xcassets in Resources */,
+				A0F3290D2902A1C700E0C47C /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,11 +156,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0038D28290068DF009A85BE /* Item.swift in Sources */,
-				A0CF1E4E29003274006F3D93 /* LineEditorCustomKeyboard.swift in Sources */,
-				A0A9E37B28FDAC7400B7606C /* ContentView.swift in Sources */,
-				A0A9E37928FDAC7400B7606C /* LineEditorApp.swift in Sources */,
-				A0A9E38728FDADFF00B7606C /* LineEditorView+Representable.swift in Sources */,
+				A0F329102902A1C700E0C47C /* LineEditorApp.swift in Sources */,
+				A0F3290E2902A1C700E0C47C /* Item.swift in Sources */,
+				A0F3290C2902A1C700E0C47C /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,9 +284,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"LineEditor/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Preview Content\"";
 				DEVELOPMENT_TEAM = 48J595L9BX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -296,6 +305,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = org.bsc.LineEditor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -306,9 +316,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"LineEditor/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Preview Content\"";
 				DEVELOPMENT_TEAM = 48J595L9BX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -334,7 +345,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A0A9E37028FDAC7400B7606C /* Build configuration list for PBXProject "LineEditor" */ = {
+		A0A9E37028FDAC7400B7606C /* Build configuration list for PBXProject "LineEditorSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A0A9E38128FDAC7700B7606C /* Debug */,
@@ -343,7 +354,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A0A9E38328FDAC7700B7606C /* Build configuration list for PBXNativeTarget "LineEditor" */ = {
+		A0A9E38328FDAC7700B7606C /* Build configuration list for PBXNativeTarget "LineEditorSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A0A9E38428FDAC7700B7606C /* Debug */,
@@ -353,6 +364,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A0F329172902A2EF00E0C47C /* LineEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LineEditor;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A0A9E36D28FDAC7400B7606C /* Project object */;
 }
