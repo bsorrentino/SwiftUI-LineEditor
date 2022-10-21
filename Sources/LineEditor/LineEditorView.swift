@@ -365,7 +365,6 @@ extension LineEditorView.Coordinator  {
             
             if let newItem = Element(rawValue: "" ) {
             
-                
                 let newIndexPath = IndexPath( row: indexPath.row + 1,
                                               section: indexPath.section )
 
@@ -382,6 +381,7 @@ extension LineEditorView.Coordinator  {
             }
         }
     }
+    
 
     func cloneItem() {
         
@@ -389,16 +389,19 @@ extension LineEditorView.Coordinator  {
             
             if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue ) {
             
-                lines.tableView.performBatchUpdates {
-                    owner.items.insert( newItem, at: indexPath.row )
-                    self.lines.tableView.insertRows(at: [indexPath], with: .bottom )
-                        
-                } completion: { [unowned self] success in
-                    let newIndexPath = IndexPath( row: indexPath.row + 1,
-                                                  section: indexPath.section )
-                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 0)
-                }
+                let newIndexPath = IndexPath( row: indexPath.row + 1,
+                                              section: indexPath.section )
 
+                lines.tableView.performBatchUpdates {
+                    
+                    owner.items.insert( newItem, at: newIndexPath.row)
+                    self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
+                    
+                } completion: { [unowned self] success in
+
+                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
+                    
+                }
             }
         }
     }
