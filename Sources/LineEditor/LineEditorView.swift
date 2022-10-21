@@ -22,7 +22,6 @@ public protocol LineEditorKeyboard : View  {
     
 }
 
-
 public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: LineEditorKeyboard>: UIViewControllerRepresentable {
     
     @Environment(\.editMode) private var editMode
@@ -77,6 +76,7 @@ extension LineEditorView {
         override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
             super.init(style: style, reuseIdentifier: reuseIdentifier)
             
+            self.selectionStyle = .none
             // contentView.isUserInteractionEnabled = false
             
             textField.keyboardType = .asciiCapable
