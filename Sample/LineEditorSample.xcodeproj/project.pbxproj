@@ -13,6 +13,7 @@
 		A0F3290F2902A1C700E0C47C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F3290A2902A1C600E0C47C /* Assets.xcassets */; };
 		A0F329102902A1C700E0C47C /* LineEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */; };
 		A0F329182902A2EF00E0C47C /* LineEditor in Frameworks */ = {isa = PBXBuildFile; productRef = A0F329172902A2EF00E0C47C /* LineEditor */; };
+		A0F3291A2902A9DE00E0C47C /* LineEditorKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329192902A9DE00E0C47C /* LineEditorKeyboard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		A0F3290A2902A1C600E0C47C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LineEditorApp.swift; sourceTree = "<group>"; };
 		A0F329152902A2C900E0C47C /* LineEditor */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = LineEditor; path = ..; sourceTree = "<group>"; };
+		A0F329192902A9DE00E0C47C /* LineEditorKeyboard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LineEditorKeyboard.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +46,7 @@
 				A0F3290A2902A1C600E0C47C /* Assets.xcassets */,
 				A0F329062902A1C600E0C47C /* ContentView.swift */,
 				A0F329092902A1C600E0C47C /* Item.swift */,
+				A0F329192902A9DE00E0C47C /* LineEditorKeyboard.swift */,
 				A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */,
 				A0F329072902A1C600E0C47C /* Preview Content */,
 				A0A9E37628FDAC7400B7606C /* Products */,
@@ -159,6 +162,7 @@
 				A0F329102902A1C700E0C47C /* LineEditorApp.swift in Sources */,
 				A0F3290E2902A1C700E0C47C /* Item.swift in Sources */,
 				A0F3290C2902A1C700E0C47C /* ContentView.swift in Sources */,
+				A0F3291A2902A9DE00E0C47C /* LineEditorKeyboard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

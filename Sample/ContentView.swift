@@ -38,7 +38,7 @@ struct ContentView: View {
     var body: some View {
         
         //NavigationStack {
-            LineEditorView<Item>(items: $items)
+            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $items)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Line Editor")
                 .toolbar {

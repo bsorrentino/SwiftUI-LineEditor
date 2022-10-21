@@ -8,14 +8,21 @@
 import SwiftUI
 import Combine
 
-protocol KeyboardSymbol {
+public protocol LineEditorKeyboardSymbol {
     
     var value: String {get}
     
     var additionalValues: [String]? {get}
 }
 
-public struct LineEditorView<Element: RawRepresentable<String>>: UIViewControllerRepresentable {
+public protocol LineEditorKeyboard : View  {
+ 
+    init( onHide: @escaping () -> Void, onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void )
+    
+}
+
+
+public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: LineEditorKeyboard>: UIViewControllerRepresentable {
     
     @Environment(\.editMode) private var editMode
     
@@ -419,7 +426,7 @@ extension LineEditorView.Coordinator {
                 
     }
     
-    func processSymbol(_ symbol: KeyboardSymbol, on textField: LineEditorView.TextField) {
+    func processSymbol(_ symbol: LineEditorKeyboardSymbol, on textField: LineEditorView.TextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
         if let indexPath = textField.indexPath, let range = textField.selectedTextRange {
@@ -458,7 +465,7 @@ extension LineEditorView.Coordinator {
     // creation Input View
     private func makeCustomKeyboardView( for textField: LineEditorView.TextField ) -> UIView  {
         
-        let keyboardView = LineEditorCustomKeyboard(
+        let keyboardView = KeyboardView(
             onHide: toggleCustomKeyobard,
             onPressSymbol: { [weak self] symbol in
                 self?.processSymbol(symbol, on: textField)
@@ -624,7 +631,22 @@ extension LineEditorView.Coordinator  {
 
 struct LineEditorView_Previews: PreviewProvider {
     
-    public struct Item: RawRepresentable {
+    struct Keyboard: LineEditorKeyboard {
+        
+        var onHide:() -> Void
+        var onPressSymbol: (LineEditorKeyboardSymbol) -> Void
+
+        init(onHide: @escaping () -> Void, onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void) {
+            self.onHide = onHide
+            self.onPressSymbol = onPressSymbol
+        }
+        
+        var body : some View {
+            EmptyView()
+        }
+    }
+    
+    struct Item: RawRepresentable {
         public var rawValue: String
        
         public init( rawValue: String  ) {
@@ -633,7 +655,7 @@ struct LineEditorView_Previews: PreviewProvider {
     }
     
     static var previews: some View {
-        LineEditorView<Item>( items: Binding.constant( [
+        LineEditorView<Item, Keyboard>( items: Binding.constant( [
             Item(rawValue: "Item1"),
             Item(rawValue: "Item2"),
             Item(rawValue: "Item3"),
