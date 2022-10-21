@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 
+
 public protocol LineEditorKeyboardSymbol {
     
     var value: String {get}
