@@ -38,6 +38,8 @@ struct ContentView: View {
     var body: some View {
         
         //NavigationStack {
+        NavigationView {
+
             LineEditorView<Item, SimpleLineEditorKeyboard>(items: $items)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Line Editor")
@@ -46,7 +48,15 @@ struct ContentView: View {
                         EditButton()
                     }
                 }
-        //}
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onChange(of: items ) {newValue in
+            newValue.forEach {
+                print( $0.rawValue )
+            }
+            
+            
+        }
         
     }
 }

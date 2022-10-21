@@ -8,12 +8,10 @@
 import Foundation
 
 
-public struct Item: Codable, Identifiable, RawRepresentable {
-    public var id: String
+public struct Item: Codable, RawRepresentable, Equatable {
     public var rawValue: String
    
     public init( rawValue: String  ) {
-        self.id = UUID().uuidString
         self.rawValue = rawValue
     }
 }

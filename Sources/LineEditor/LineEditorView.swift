@@ -271,6 +271,12 @@ extension LineEditorView {
         
         public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
             
+            // skip newline
+            // https://stackoverflow.com/a/44939369/521197
+            guard string.rangeOfCharacter(from: CharacterSet.newlines) == nil else {
+                return false
+            }
+
             guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
                 return false
             }
