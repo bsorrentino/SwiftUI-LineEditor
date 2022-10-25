@@ -49,7 +49,7 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
             uiViewController.isEditing = isEditing
         }
         
-        items.forEach { print( $0 ) }
+        // items.forEach { print( $0 ) }
     }
 
 }
@@ -198,7 +198,7 @@ extension LineEditorView {
             lines.tableView.dataSource = self
 
             keyboardCancellable = keyboardRectPublisher.sink {  [weak self] rect in
-                print( "keyboardRect: \(rect)")
+//                print( "keyboardRect: \(rect)")
                 self?.keyboardRect = rect
             }
 
@@ -227,7 +227,7 @@ extension LineEditorView {
                             at: indexPath,
                             withText: owner.items[ indexPath.row ].rawValue)
             
-            print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
+//            print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
             
             return line
         }
@@ -374,9 +374,15 @@ extension LineEditorView.Coordinator  {
                 let newIndexPath = IndexPath( row: indexPath.row + 1,
                                               section: indexPath.section )
 
+
                 lines.tableView.performBatchUpdates {
                     
-                    owner.items.insert( newItem, at: newIndexPath.row)
+                    if newIndexPath.row == owner.items.endIndex {
+                        owner.items.append( newItem)
+                    }
+                    else {
+                        owner.items.insert( newItem, at: indexPath.row)
+                    }
                     self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
                     
                 } completion: { [unowned self] success in
@@ -491,7 +497,7 @@ extension LineEditorView.Coordinator {
     
     func toggleCustomKeyobard() {
         
-        print( "toggleCustomKeyobard: \(self.showCustomKeyboard)" )
+//        print( "toggleCustomKeyobard: \(self.showCustomKeyboard)" )
         
         guard let textField = lines.findFirstTextFieldResponder() else {
             return
