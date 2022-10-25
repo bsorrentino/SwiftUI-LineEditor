@@ -51,8 +51,8 @@ struct ContentView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onChange(of: items ) {newValue in
-            newValue.forEach {
-                print( $0.rawValue )
+            newValue.enumerated().forEach { ( index, item ) in
+                print( "\(index)) \(item.rawValue)" )
             }
             
             
