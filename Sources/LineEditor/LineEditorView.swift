@@ -562,7 +562,7 @@ extension LineEditorView.Coordinator  {
         
         let bar = UIToolbar()
         
-        let toggleKeyboardTitle = NSLocalizedString("PlantUML Keyboard", comment: "")
+        let toggleKeyboardTitle = NSLocalizedString("Custom Keyboard", comment: "")
         let toggleKeyboardAction = UIAction(title: toggleKeyboardTitle) { [weak self] action in
             self?.toggleCustomKeyobard()
         }
