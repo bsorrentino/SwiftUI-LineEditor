@@ -257,7 +257,13 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-            owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
+            
+            if isLastItem( at: destinationIndexPath ) {
+                owner.items.append( owner.items.remove(at: sourceIndexPath.row) )
+            }
+            else {
+                owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
+            }
         }
         
         // MARK: - UITableViewDelegate
@@ -312,12 +318,21 @@ extension LineEditorView {
 // MARK: - Coordinator::ItemActions
 extension LineEditorView.Coordinator  {
     
+    func isLastItem( at indexPath: IndexPath ) -> Bool {
+        indexPath.row == owner.items.endIndex - 1
+    }
+
+    func isItemsEndIndex( at indexPath: IndexPath ) -> Bool {
+        indexPath.row == owner.items.endIndex
+    }
+    
     func updateItem( at index: Int, withText text: String ) {
         if let item = Element(rawValue: text ) {
             owner.items[ index ] = item
         }
 
     }
+        
     func addItemAbove() {
 
         if let indexPath = lines.tableView.indexPathForSelectedRow {
@@ -364,32 +379,37 @@ extension LineEditorView.Coordinator  {
 
     }
     
+    private func addItemBelow( _ newItem: Element, at indexPath: IndexPath ) {
+        
+        let newIndexPath = IndexPath( row: indexPath.row + 1,
+                                      section: indexPath.section )
 
+
+        lines.tableView.performBatchUpdates {
+            
+            if  isItemsEndIndex( at: newIndexPath ) {
+                owner.items.append( newItem)
+            }
+            else {
+                owner.items.insert( newItem, at: newIndexPath.row )
+            }
+            self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
+            
+        } completion: { [unowned self] success in
+
+            self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
+            
+        }
+
+    }
+    
     func addItemBelow() {
         
         if let indexPath = lines.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: "" ) {
-            
-                let newIndexPath = IndexPath( row: indexPath.row + 1,
-                                              section: indexPath.section )
-
-
-                lines.tableView.performBatchUpdates {
-                    
-                    if newIndexPath.row == owner.items.endIndex {
-                        owner.items.append( newItem)
-                    }
-                    else {
-                        owner.items.insert( newItem, at: indexPath.row)
-                    }
-                    self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
-                    
-                } completion: { [unowned self] success in
-
-                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
-                    
-                }
+                
+                addItemBelow( newItem, at: indexPath)
             }
         }
     }
@@ -399,21 +419,9 @@ extension LineEditorView.Coordinator  {
         
         if let indexPath = lines.tableView.indexPathForSelectedRow {
             
-            if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue ) {
-            
-                let newIndexPath = IndexPath( row: indexPath.row + 1,
-                                              section: indexPath.section )
-
-                lines.tableView.performBatchUpdates {
-                    
-                    owner.items.insert( newItem, at: newIndexPath.row)
-                    self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
-                    
-                } completion: { [unowned self] success in
-
-                    self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
-                    
-                }
+            if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue  ) {
+                
+                addItemBelow( newItem, at: indexPath)
             }
         }
     }
