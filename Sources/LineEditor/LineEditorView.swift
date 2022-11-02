@@ -57,9 +57,21 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
 // MARK: - Data Model
 extension LineEditorView {
     
+    
     class TextField : UITextField {
         var indexPath: IndexPath?
         
+        private(set) var isPastingContent:Bool = false
+        
+        open override func paste(_ sender: Any?) {
+            isPastingContent = true
+            super.paste(sender)
+        }
+
+        override func becomeFirstResponder() -> Bool {
+            isPastingContent = false
+            return super.becomeFirstResponder()
+        }
     }
     
     public class Line : UITableViewCell {
@@ -275,11 +287,11 @@ extension LineEditorView {
      
         // MARK: - UITextFieldDelegate
         
-        public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        private func shouldChangeCharactersIn(_ textField: UITextField, in range: NSRange, replacementString input: String) -> Bool {
             
             // skip newline
             // https://stackoverflow.com/a/44939369/521197
-            guard string.rangeOfCharacter(from: CharacterSet.newlines) == nil else {
+            guard input.rangeOfCharacter(from: CharacterSet.newlines) == nil else {
                 return false
             }
 
@@ -288,12 +300,48 @@ extension LineEditorView {
             }
             
             if let text = textField.text, let range = Range(range, in: text) {
-                if let item = Element(rawValue: text.replacingCharacters(in: range, with: string)) {
+                if let item = Element(rawValue: text.replacingCharacters(in: range, with: input)) {
                     owner.items[ indexPath.row ] = item
                 }
             }
 
             return true
+
+        }
+        
+        private func getFromClipboard() -> [String]? {
+            
+            guard let strings = UIPasteboard.general.string  else {
+                return nil
+            }
+                
+            return strings.components(separatedBy: "\n")
+        }
+        
+        public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString input: String) -> Bool {
+            
+            guard let textField = textField as? LineEditorView.TextField else {
+                return false
+            }
+    
+            if textField.isPastingContent, let lines = getFromClipboard() {
+
+                let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
+
+                if lines.count > 1,  let indexPath = textField.indexPath {
+                    
+                    let elements = lines.enumerated().compactMap { (index, value) in
+                        ( index == 0 ) ? nil : Element(rawValue: value)
+                    }
+                    
+                    self.addItemsBelow(elements, at: indexPath)
+                }
+                
+                return result
+
+            }
+            
+            return  self.shouldChangeCharactersIn(textField, in: range, replacementString: input)
         }
         
         public func textFieldDidBeginEditing(_ textField: UITextField) {
@@ -309,7 +357,10 @@ extension LineEditorView {
             }
             lines.tableView.deselectRow(at: indexPath, animated: false)
         }
-
+        
+        public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
+            return false
+        }
     }
     
 }
