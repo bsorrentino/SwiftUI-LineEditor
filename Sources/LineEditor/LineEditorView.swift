@@ -54,6 +54,24 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
 
 }
 
+// MARK: IndexPath extension
+extension IndexPath {
+
+    func isValid<T>( in slice:Array<T> ) -> Bool {
+        guard self.row >= slice.startIndex && self.row < slice.endIndex else  {
+            return false
+        }
+        return true
+    }
+
+    func testValid<T>( in slice:Array<T> ) -> Self? {
+        guard self.row >= slice.startIndex && self.row < slice.endIndex else  {
+            return nil
+        }
+        return self
+    }
+}
+
 // MARK: - Data Model
 extension LineEditorView {
     
@@ -217,13 +235,6 @@ extension LineEditorView {
         }
         
         // MARK: - UITableViewDataSource
-
-        private func isValidIndexPath( _ indexPath: IndexPath ) -> Bool {
-            guard indexPath.row >= owner.items.startIndex && indexPath.row < owner.items.endIndex else  {
-                return false
-            }
-            return true
-        }
         
         private func disabledCell() -> UITableViewCell {
             let cell =  UITableViewCell()
@@ -238,7 +249,7 @@ extension LineEditorView {
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-            guard isValidIndexPath(indexPath) else {
+            guard indexPath.isValid( in: owner.items ) else {
                 fatalError( "index is no longer valid. indexPath:\(indexPath.row) in [\(owner.items.startIndex), \(owner.items.endIndex)]")
             }
 
@@ -310,7 +321,7 @@ extension LineEditorView {
                 return false
             }
 
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
                 return false
             }
             
@@ -343,7 +354,7 @@ extension LineEditorView {
 
                 let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
 
-                if lines.count > 1,  let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) {
+                if lines.count > 1,  let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) {
                     
                     let elements = lines.enumerated().compactMap { (index, value) in
                         ( index == 0 ) ? nil : Element(rawValue: value)
@@ -360,14 +371,14 @@ extension LineEditorView {
         }
         
         public func textFieldDidBeginEditing(_ textField: UITextField) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
                 return
             }
             lines.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
         public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
                 return
             }
             lines.tableView.deselectRow(at: indexPath, animated: false)
@@ -519,7 +530,7 @@ extension LineEditorView.Coordinator {
     func processSymbol(_ symbol: LineEditorKeyboardSymbol, on textField: LineEditorView.TextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
-        if let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath), let range = textField.selectedTextRange {
+        if let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ), let range = textField.selectedTextRange {
             // From your question I assume that you do not want to replace a selection, only insert some text where the cursor is.
             textField.replace(range, withText: symbol.value )
             if let text = textField.text {
