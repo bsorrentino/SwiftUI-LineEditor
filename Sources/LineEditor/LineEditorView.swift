@@ -59,7 +59,7 @@ extension LineEditorView {
     
     
     class TextField : UITextField {
-        var indexPath: IndexPath?
+        var capturedIndexPath: IndexPath?
         
         private(set) var isPastingContent:Bool = false
         
@@ -217,9 +217,12 @@ extension LineEditorView {
         }
         
         // MARK: - UITableViewDataSource
-        
-        public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            owner.items.count
+
+        private func isValidIndexPath( _ indexPath: IndexPath ) -> Bool {
+            guard indexPath.row >= owner.items.startIndex && indexPath.row < owner.items.endIndex else  {
+                return false
+            }
+            return true
         }
         
         private func disabledCell() -> UITableViewCell {
@@ -228,12 +231,21 @@ extension LineEditorView {
             cell.isUserInteractionEnabled = false
             return cell
         }
+
+        public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            owner.items.count
+        }
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-            
+
+            guard isValidIndexPath(indexPath) else {
+                fatalError( "index is no longer valid. indexPath:\(indexPath.row) in [\(owner.items.startIndex), \(owner.items.endIndex)]")
+            }
+
             guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
                 return disabledCell()
             }
+            
             
             setupTextField( line.textField,
                             at: indexPath,
@@ -251,9 +263,12 @@ extension LineEditorView {
         public func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
             switch( editingStyle ) {
             case .delete:
-                print( "delete" )
+                print( "delete at \(indexPath.row)" )
                 owner.items.remove(at: indexPath.row)
+                tableView.beginUpdates()
                 tableView.deleteRows(at: [indexPath], with: .fade)
+                tableView.endUpdates()
+                tableView.reloadData()
             case .insert:
                 // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
                 print( "insert" )
@@ -295,7 +310,7 @@ extension LineEditorView {
                 return false
             }
 
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
                 return false
             }
             
@@ -328,7 +343,7 @@ extension LineEditorView {
 
                 let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
 
-                if lines.count > 1,  let indexPath = textField.indexPath {
+                if lines.count > 1,  let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) {
                     
                     let elements = lines.enumerated().compactMap { (index, value) in
                         ( index == 0 ) ? nil : Element(rawValue: value)
@@ -345,14 +360,14 @@ extension LineEditorView {
         }
         
         public func textFieldDidBeginEditing(_ textField: UITextField) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
                 return
             }
             lines.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
         public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath) else {
                 return
             }
             lines.tableView.deselectRow(at: indexPath, animated: false)
@@ -504,7 +519,7 @@ extension LineEditorView.Coordinator {
     func processSymbol(_ symbol: LineEditorKeyboardSymbol, on textField: LineEditorView.TextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
-        if let indexPath = textField.indexPath, let range = textField.selectedTextRange {
+        if let indexPath = textField.capturedIndexPath, isValidIndexPath(indexPath), let range = textField.selectedTextRange {
             // From your question I assume that you do not want to replace a selection, only insert some text where the cursor is.
             textField.replace(range, withText: symbol.value )
             if let text = textField.text {
@@ -598,7 +613,7 @@ extension LineEditorView.Coordinator  {
     
     private func setupTextField( _ textField: LineEditorView.TextField, at indexPath: IndexPath, withText text: String ) {
          
-        textField.indexPath = indexPath
+        textField.capturedIndexPath = indexPath
         
         if textField.delegate == nil {
             textField.delegate = self
