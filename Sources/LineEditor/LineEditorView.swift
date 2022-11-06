@@ -162,6 +162,7 @@ extension LineEditorView {
                      rightView: UIView?,
                      inputAccessoryView: UIView? ) {
              
+            
             textField.capturedIndexPath = indexPath
             
             if textField.delegate == nil {
@@ -193,14 +194,19 @@ extension LineEditorView {
         var fontSize:CGFloat = 15 {
             didSet {
                 if oldValue != fontSize {
+                    
+                    let reload = font != nil
+                    
                     font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+                    
+                    if reload {
+                        tableView.reloadData()
+                    }
                 }
             }
         }
         
         public override func viewDidLoad() {
-            
-            font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
             
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
             tableView.separatorStyle = .none

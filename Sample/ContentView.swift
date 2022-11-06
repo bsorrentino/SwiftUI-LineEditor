@@ -10,6 +10,8 @@ import LineEditor
 
 struct ContentView: View {
     
+    @State var fontSize:CGFloat = 20
+    
     @State var items = [
         Item( rawValue:"line_first"),
         Item( rawValue: "line01" ),
@@ -41,10 +43,24 @@ struct ContentView: View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $items)
+            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $items, fontSize: $fontSize)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Line Editor")
                 .toolbar {
+                    ToolbarItemGroup(placement: .navigationBarLeading) {
+                        HStack( spacing: 0 ) {
+                            Button( action: {
+                                fontSize += 1
+                            } ) {
+                                Image( systemName: "textformat.size.larger")
+                            }
+                            Button( action: {
+                                fontSize -= 1
+                            } ) {
+                                Image( systemName: "textformat.size.smaller")
+                            }
+                        }
+                    }
                     ToolbarItem(placement:.navigationBarTrailing) {
                         EditButton()
                     }
