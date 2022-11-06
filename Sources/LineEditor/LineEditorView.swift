@@ -29,10 +29,17 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     public typealias UIViewControllerType = Lines
     
     @Binding var items:Array<Element>
+    @Binding var fontSize:CGFloat
     
-    public init( items: Binding<Array<Element>> ) {
+    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat> ) {
         self._items = items
+        self._fontSize = fontSize
     }
+
+    public init( items: Binding<Array<Element>> ) {
+        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)) )
+    }
+    
     public func makeCoordinator() -> Coordinator {
         Coordinator( owner: self)
     }
@@ -48,6 +55,8 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
             print( "editMode: \(isEditing)")
             uiViewController.isEditing = isEditing
         }
+        
+        uiViewController.fontSize = fontSize
         
         // items.forEach { print( $0 ) }
     }
@@ -75,7 +84,7 @@ extension IndexPath {
 // MARK: - Data Model
 extension LineEditorView {
     
-    
+    // MARK: - TextField
     class TextField : UITextField {
         var capturedIndexPath: IndexPath?
         
@@ -89,6 +98,17 @@ extension LineEditorView {
         override func becomeFirstResponder() -> Bool {
             isPastingContent = false
             return super.becomeFirstResponder()
+        }
+        
+        func updateFont( _ newFont: UIFont? ) {
+            guard let newFont else {
+                return
+            }
+            
+            if self.font == nil || (self.font != nil &&  newFont.pointSize != self.font!.pointSize) {
+                self.font = newFont
+            }
+            
         }
     }
     
@@ -111,7 +131,7 @@ extension LineEditorView {
             
             textField.keyboardType = .asciiCapable
             textField.autocapitalizationType = .none
-            textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
+            //textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
             contentView.addSubview(textField)
             
@@ -122,7 +142,7 @@ extension LineEditorView {
             fatalError("init(coder:) has not been implemented")
         }
         
-        func setupContraints() {
+        private func setupContraints() {
             textField.translatesAutoresizingMaskIntoConstraints = false
             
             let constraints = [
@@ -135,20 +155,59 @@ extension LineEditorView {
             NSLayoutConstraint.activate(constraints)
         }
         
+        func update( at indexPath: IndexPath,
+                     text: String,
+                     delegate: UITextFieldDelegate,
+                     font newFont: UIFont?,
+                     rightView: UIView?,
+                     inputAccessoryView: UIView? ) {
+             
+            textField.capturedIndexPath = indexPath
+            
+            if textField.delegate == nil {
+                textField.delegate = delegate
+            }
+            
+            if textField.rightView == nil {
+                textField.rightView = rightView
+                textField.rightViewMode = .whileEditing
+            }
+            
+            if textField.inputAccessoryView == nil {
+                textField.inputAccessoryView = inputAccessoryView
+            }
+
+            textField.updateFont(newFont)
+            textField.text = text
+        }
+
     }
     
     
     public class Lines : UITableViewController {
         
-        var timerCancellable: Cancellable?
+        private var timerCancellable: Cancellable?
+        
+        private(set) var font:UIFont?
+        
+        var fontSize:CGFloat = 15 {
+            didSet {
+                if oldValue != fontSize {
+                    font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+                }
+            }
+        }
         
         public override func viewDidLoad() {
+            
+            font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+            
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
             tableView.separatorStyle = .none
 //            tableView.backgroundColor = UIColor.gray
             isEditing = false
         }
-        
+                
         func findFirstTextFieldResponder() -> LineEditorView.TextField? {
             
             return tableView.visibleCells
@@ -220,6 +279,7 @@ extension LineEditorView {
             makeContextMenuView()
         }()
 
+        
         init(owner: LineEditorView ) {
             self.owner = owner
             super.init()
@@ -258,9 +318,12 @@ extension LineEditorView {
             }
             
             
-            setupTextField( line.textField,
-                            at: indexPath,
-                            withText: owner.items[ indexPath.row ].rawValue)
+            line.update( at: indexPath,
+                         text: owner.items[ indexPath.row ].rawValue,
+                         delegate: self,
+                         font: lines.font,
+                         rightView: self.rightView,
+                         inputAccessoryView: inputAccessoryView)
             
 //            print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
             
@@ -622,26 +685,6 @@ extension LineEditorView.Coordinator {
 // MARK: - Coordinator::UITextField
 extension LineEditorView.Coordinator  {
     
-    private func setupTextField( _ textField: LineEditorView.TextField, at indexPath: IndexPath, withText text: String ) {
-         
-        textField.capturedIndexPath = indexPath
-        
-        if textField.delegate == nil {
-            textField.delegate = self
-        }
-        
-        if textField.rightView == nil {
-            textField.rightView = rightView
-            textField.rightViewMode = .whileEditing
-
-        }
-        if textField.inputAccessoryView == nil {
-            textField.inputAccessoryView = inputAccessoryView
-        }
-
-        textField.text = text
-    }
-
 
     private func makeInputAccesoryView() -> UIView {
         
