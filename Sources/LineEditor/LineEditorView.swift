@@ -156,30 +156,26 @@ extension LineEditorView {
         }
         
         func update( at indexPath: IndexPath,
-                     text: String,
-                     delegate: UITextFieldDelegate,
-                     font newFont: UIFont?,
-                     rightView: UIView?,
-                     inputAccessoryView: UIView? ) {
+                     coordinator: LineEditorView.Coordinator ) {
              
             
             textField.capturedIndexPath = indexPath
             
             if textField.delegate == nil {
-                textField.delegate = delegate
+                textField.delegate = coordinator
             }
             
             if textField.rightView == nil {
-                textField.rightView = rightView
+                textField.rightView = coordinator.rightView
                 textField.rightViewMode = .whileEditing
             }
             
             if textField.inputAccessoryView == nil {
-                textField.inputAccessoryView = inputAccessoryView
+                textField.inputAccessoryView = coordinator.inputAccessoryView
             }
 
-            textField.updateFont(newFont)
-            textField.text = text
+            textField.updateFont(coordinator.lines.font)
+            textField.text = coordinator.items[ indexPath.row ].rawValue
         }
 
     }
@@ -269,7 +265,11 @@ extension LineEditorView {
         private let ROW_HEIGHT = 30.0
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        let owner: LineEditorView
+        private let owner: LineEditorView
+        
+        var items: Array<Element> {
+            owner.items
+        }
         
         let lines = Lines()
         
@@ -325,11 +325,7 @@ extension LineEditorView {
             
             
             line.update( at: indexPath,
-                         text: owner.items[ indexPath.row ].rawValue,
-                         delegate: self,
-                         font: lines.font,
-                         rightView: self.rightView,
-                         inputAccessoryView: inputAccessoryView)
+                         coordinator: self)
             
 //            print( "cellForRowAt: \(indexPath.row) - \(owner.items[ indexPath.row ].rawValue)")
             
