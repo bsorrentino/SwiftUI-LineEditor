@@ -102,10 +102,7 @@ extension LineEditorView {
             return super.becomeFirstResponder()
         }
         
-        func updateFont( _ newFont: UIFont? ) {
-            guard let newFont else {
-                return
-            }
+        func updateFont( _ newFont: UIFont ) {
             
             if self.font == nil || (self.font != nil &&  newFont.pointSize != self.font!.pointSize) {
                 self.font = newFont
@@ -133,7 +130,7 @@ extension LineEditorView {
             
             textField.keyboardType = .asciiCapable
             textField.autocapitalizationType = .none
-            //textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
+            // textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
             contentView.addSubview(textField)
             
@@ -187,23 +184,20 @@ extension LineEditorView {
         
         private var timerCancellable: Cancellable?
         
-        private(set) var font:UIFont?
-        
         var fontSize:CGFloat = 15 {
             didSet {
                 if oldValue != fontSize {
                     
-                    let reload = font != nil
-                    
                     font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
                     
-                    if reload {
-                        tableView.reloadData()
-                    }
+                    tableView.reloadData()
                 }
             }
         }
+
+        private(set) var font:UIFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
         
+
         public override func viewDidLoad() {
             
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")

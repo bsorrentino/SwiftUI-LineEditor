@@ -10,7 +10,7 @@ import LineEditor
 
 struct ContentView: View {
     
-    @State var fontSize:CGFloat = 20
+    @State var fontSize:CGFloat = 15
     
     @State var items = [
         Item( rawValue:"line_first"),
