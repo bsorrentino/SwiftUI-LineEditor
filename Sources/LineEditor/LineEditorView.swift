@@ -45,8 +45,10 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     }
     
     public func makeUIViewController(context: Context) -> Lines {
+        let uiViewController = context.coordinator.lines
+        uiViewController.fontSize = fontSize
         
-        return context.coordinator.lines
+        return uiViewController
     }
     
     public func updateUIViewController(_ uiViewController: Lines, context: Context) {
