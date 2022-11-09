@@ -124,10 +124,11 @@ extension LineEditorView {
         
         override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
             super.init(style: style, reuseIdentifier: reuseIdentifier)
-            
+            self.accessibilityIdentifier = "LineCell"
             self.selectionStyle = .none
             // contentView.isUserInteractionEnabled = false
             
+            textField.accessibilityIdentifier = "LineText"
             textField.keyboardType = .asciiCapable
             textField.autocapitalizationType = .none
             // textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)

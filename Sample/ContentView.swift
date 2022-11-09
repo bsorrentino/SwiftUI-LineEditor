@@ -14,7 +14,7 @@ struct ContentView: View {
     
     @State var items = [
         Item( rawValue:"line_first"),
-        Item( rawValue: "line01" ),
+        Item( rawValue:"line01"),
         Item( rawValue:"line02"),
         Item( rawValue:"line03"),
         Item( rawValue:"line04"),
