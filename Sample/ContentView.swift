@@ -48,18 +48,8 @@ struct ContentView: View {
                 .navigationTitle("Line Editor")
                 .toolbar {
                     ToolbarItemGroup(placement: .navigationBarLeading) {
-                        HStack( spacing: 0 ) {
-                            Button( action: {
-                                fontSize += 1
-                            } ) {
-                                Image( systemName: "textformat.size.larger")
-                            }
-                            Button( action: {
-                                fontSize -= 1
-                            } ) {
-                                Image( systemName: "textformat.size.smaller")
-                            }
-                        }
+                        
+                        fontSizeView()
                     }
                     ToolbarItem(placement:.navigationBarTrailing) {
                         EditButton()
@@ -75,6 +65,25 @@ struct ContentView: View {
             
         }
         
+    }
+    
+    func fontSizeView() -> some View {
+        HStack( spacing: 2 ) {
+            Spacer()
+            Button( action: { fontSize += 1 } ) {
+                Image( systemName: "textformat.size.larger")
+            }
+            Divider().background(Color.blue)
+            Spacer()
+            Button( action: { fontSize -= 1} ) {
+                Image( systemName: "textformat.size.smaller")
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.blue, lineWidth: 1)
+            
+        }
     }
 }
 

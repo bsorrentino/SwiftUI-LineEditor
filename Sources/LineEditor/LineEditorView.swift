@@ -45,7 +45,7 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     }
     
     public func makeUIViewController(context: Context) -> Lines {
-        let uiViewController = context.coordinator.lines
+        let uiViewController = context.coordinator.linesController
         uiViewController.fontSize = fontSize
         
         return uiViewController
@@ -88,9 +88,16 @@ extension LineEditorView {
     
     // MARK: - TextField
     class TextField : UITextField {
-        var capturedIndexPath: IndexPath?
+        
+        var owningCell:Line? {
+            guard let contentView = superview, let cell = contentView.superview as? Line else {
+                return nil
+            }
+            return cell
+        }
         
         private(set) var isPastingContent:Bool = false
+        
         
         open override func paste(_ sender: Any?) {
             isPastingContent = true
@@ -108,6 +115,11 @@ extension LineEditorView {
                 self.font = newFont
             }
             
+        }
+
+        @inline(__always)
+        func indexPath( for tableView: UITableView ) -> IndexPath? {
+            owningCell?.indexPath(for: tableView)
         }
     }
     
@@ -175,10 +187,7 @@ extension LineEditorView {
         
         func update( at indexPath: IndexPath,
                      coordinator: LineEditorView.Coordinator ) {
-             
-            
-            textField.capturedIndexPath = indexPath
-            
+                         
 #if DEBUG
             lineNumber.text = "\(indexPath.row)"
 #endif
@@ -195,10 +204,14 @@ extension LineEditorView {
                 textField.inputAccessoryView = coordinator.inputAccessoryView
             }
 
-            textField.updateFont(coordinator.lines.font)
+            textField.updateFont(coordinator.linesController.font)
             textField.text = coordinator.items[ indexPath.row ].rawValue
         }
 
+        @inline(__always)
+        func indexPath( for tableView: UITableView ) -> IndexPath? {
+            tableView.indexPath(for: self)
+        }
     }
     
     
@@ -289,8 +302,8 @@ extension LineEditorView {
             owner.items
         }
         
-        let lines = Lines()
-        
+        let linesController = Lines()
+                
         private var keyboardRect:CGRect = .zero
         private var keyboardCancellable:AnyCancellable?
         private var showCustomKeyboard:Bool = false
@@ -308,8 +321,8 @@ extension LineEditorView {
             self.owner = owner
             super.init()
             
-            lines.tableView.delegate = self
-            lines.tableView.dataSource = self
+            linesController.tableView.delegate = self
+            linesController.tableView.dataSource = self
 
             keyboardCancellable = keyboardRectPublisher.sink {  [weak self] rect in
 //                print( "keyboardRect: \(rect)")
@@ -319,6 +332,19 @@ extension LineEditorView {
         }
         
         // MARK: - UITableViewDataSource
+        
+        private func reloadRows( from indexPath: IndexPath  ) {
+//            guard indexPath.isValid( in: owner.items ) else {
+//                return
+//            }
+//
+//            let reloadIndexes = Array(indexPath.row...owner.items.count).map { row in
+//                IndexPath( row: row, section: indexPath.section)
+//            }
+//            linesController.tableView.reloadRows(at: reloadIndexes, with: .none)
+            
+            linesController.tableView.reloadData()
+        }
         
         private func disabledCell() -> UITableViewCell {
             let cell =  UITableViewCell()
@@ -362,7 +388,8 @@ extension LineEditorView {
                 tableView.beginUpdates()
                 tableView.deleteRows(at: [indexPath], with: .fade)
                 tableView.endUpdates()
-                tableView.reloadData()
+                //tableView.reloadData()
+                reloadRows(from: indexPath)
             case .insert:
                 // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
                 print( "insert" )
@@ -404,7 +431,7 @@ extension LineEditorView {
                 return false
             }
 
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView)?.testValid( in: owner.items ) else {
                 return false
             }
             
@@ -437,7 +464,7 @@ extension LineEditorView {
 
                 let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
 
-                if lines.count > 1,  let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) {
+                if lines.count > 1,  let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: owner.items ) {
                     
                     let elements = lines.enumerated().compactMap { (index, value) in
                         ( index == 0 ) ? nil : Element(rawValue: value)
@@ -454,17 +481,17 @@ extension LineEditorView {
         }
         
         public func textFieldDidBeginEditing(_ textField: UITextField) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
-            lines.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+            linesController.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
         public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
-            lines.tableView.deselectRow(at: indexPath, animated: false)
+            linesController.tableView.deselectRow(at: indexPath, animated: false)
         }
         
         public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
@@ -495,17 +522,18 @@ extension LineEditorView.Coordinator  {
         
     func addItemAbove() {
 
-        if let indexPath = lines.tableView.indexPathForSelectedRow {
+        if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: "") {
 
-                lines.tableView.performBatchUpdates {
+                linesController.tableView.performBatchUpdates {
                     owner.items.insert( newItem, at: indexPath.row )
-                    self.lines.tableView.insertRows(at: [indexPath], with: .automatic )
+                    self.linesController.tableView.insertRows(at: [indexPath], with: .automatic )
                         
                 } completion: { [unowned self] success in
                     
-                    self.lines.becomeFirstResponder(at: indexPath, withRetries: 0)
+                    self.reloadRows(from: indexPath)
+                    self.linesController.becomeFirstResponder(at: indexPath, withRetries: 0)
                     
                 }
 
@@ -524,14 +552,15 @@ extension LineEditorView.Coordinator  {
                 return i
             }
 
-        lines.tableView.performBatchUpdates {
+        linesController.tableView.performBatchUpdates {
                 
-            self.lines.tableView.insertRows(at: indexes, with: .automatic )
+            self.linesController.tableView.insertRows(at: indexes, with: .automatic )
             
         } completion: { [unowned self] success in
 
             if let last = indexes.last {
-                self.lines.becomeFirstResponder(at: last, withRetries: 5)
+                self.reloadRows( from: last )
+                self.linesController.becomeFirstResponder(at: last, withRetries: 5)
             }
             
             
@@ -545,7 +574,7 @@ extension LineEditorView.Coordinator  {
                                       section: indexPath.section )
 
 
-        lines.tableView.performBatchUpdates {
+        linesController.tableView.performBatchUpdates {
             
             if  isItemsEndIndex( at: newIndexPath ) {
                 owner.items.append( newItem)
@@ -553,11 +582,13 @@ extension LineEditorView.Coordinator  {
             else {
                 owner.items.insert( newItem, at: newIndexPath.row )
             }
-            self.lines.tableView.insertRows(at: [newIndexPath], with: .automatic )
+            self.linesController.tableView.insertRows(at: [newIndexPath], with: .automatic )
             
         } completion: { [unowned self] success in
 
-            self.lines.becomeFirstResponder(at: newIndexPath, withRetries: 5)
+            self.reloadRows( from: newIndexPath )
+
+            self.linesController.becomeFirstResponder(at: newIndexPath, withRetries: 5)
             
         }
 
@@ -565,7 +596,7 @@ extension LineEditorView.Coordinator  {
     
     func addItemBelow() {
         
-        if let indexPath = lines.tableView.indexPathForSelectedRow {
+        if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: "" ) {
                 
@@ -577,7 +608,7 @@ extension LineEditorView.Coordinator  {
 
     func cloneItem() {
         
-        if let indexPath = lines.tableView.indexPathForSelectedRow {
+        if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue  ) {
                 
@@ -613,7 +644,7 @@ extension LineEditorView.Coordinator {
     func processSymbol(_ symbol: LineEditorKeyboardSymbol, on textField: LineEditorView.TextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
-        if let indexPath = textField.capturedIndexPath?.testValid( in: owner.items ), let range = textField.selectedTextRange {
+        if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.selectedTextRange {
             // From your question I assume that you do not want to replace a selection, only insert some text where the cursor is.
             textField.replace(range, withText: symbol.value )
             if let text = textField.text {
@@ -667,7 +698,7 @@ extension LineEditorView.Coordinator {
         
 //        print( "toggleCustomKeyobard: \(self.showCustomKeyboard)" )
         
-        guard let textField = lines.findFirstTextFieldResponder() else {
+        guard let textField = linesController.findFirstTextFieldResponder() else {
             return
         }
         
