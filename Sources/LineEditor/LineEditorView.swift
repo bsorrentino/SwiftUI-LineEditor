@@ -112,8 +112,11 @@ extension LineEditorView {
     }
     
     public class Line : UITableViewCell {
-        
+#if DEBUG
+        let lineNumber = UILabel()
+#endif
         let textField = TextField()
+        
         
         private var tableView:UITableView {
             guard let tableView = self.superview as? UITableView else {
@@ -128,11 +131,16 @@ extension LineEditorView {
             self.selectionStyle = .none
             // contentView.isUserInteractionEnabled = false
             
+            
             textField.accessibilityIdentifier = "LineText"
             textField.keyboardType = .asciiCapable
             textField.autocapitalizationType = .none
             // textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
+#if DEBUG
+            lineNumber.backgroundColor = UIColor.lightGray
+            contentView.addSubview(lineNumber)
+#endif
             contentView.addSubview(textField)
             
             setupContraints()
@@ -145,12 +153,22 @@ extension LineEditorView {
         private func setupContraints() {
             textField.translatesAutoresizingMaskIntoConstraints = false
             
-            let constraints = [
-                textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5),
-                //textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0),
-                textField.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -15.0),
-                textField.heightAnchor.constraint(equalTo: contentView.heightAnchor)
-            ]
+            var constraints = Array<NSLayoutConstraint>()
+            
+#if DEBUG
+            lineNumber.translatesAutoresizingMaskIntoConstraints = false
+            
+            constraints.append( lineNumber.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
+            constraints.append( lineNumber.widthAnchor.constraint(equalToConstant: 35 ) )
+            constraints.append( lineNumber.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
+
+            constraints.append( textField.leadingAnchor.constraint(equalTo: lineNumber.trailingAnchor, constant: 5) )
+#else
+            constraints.append( textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
+#endif
+            
+            constraints.append( textField.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -15.0) )
+            constraints.append( textField.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
             
             NSLayoutConstraint.activate(constraints)
         }
@@ -161,6 +179,9 @@ extension LineEditorView {
             
             textField.capturedIndexPath = indexPath
             
+#if DEBUG
+            lineNumber.text = "\(indexPath.row)"
+#endif
             if textField.delegate == nil {
                 textField.delegate = coordinator
             }
