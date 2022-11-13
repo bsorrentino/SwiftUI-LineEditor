@@ -30,14 +30,16 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     
     @Binding var items:Array<Element>
     @Binding var fontSize:CGFloat
-    
-    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat> ) {
-        self._items = items
-        self._fontSize = fontSize
+    @Binding var showLine:Bool
+
+    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat>, showLine:Binding<Bool> ) {
+        self._items     = items
+        self._fontSize  = fontSize
+        self._showLine  = showLine
     }
 
     public init( items: Binding<Array<Element>> ) {
-        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)) )
+        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false) )
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -46,7 +48,7 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     
     public func makeUIViewController(context: Context) -> Lines {
         let uiViewController = context.coordinator.linesController
-        uiViewController.fontSize = fontSize
+        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
         
         return uiViewController
     }
@@ -54,11 +56,11 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     public func updateUIViewController(_ uiViewController: Lines, context: Context) {
         
         if let isEditing = editMode?.wrappedValue.isEditing {
-            print( "editMode: \(isEditing)")
+            // print( "editMode: \(isEditing)")
             uiViewController.isEditing = isEditing
         }
         
-        uiViewController.fontSize = fontSize
+        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
         
         // items.forEach { print( $0 ) }
     }
@@ -124,9 +126,8 @@ extension LineEditorView {
     }
     
     public class Line : UITableViewCell {
-#if DEBUG
+
         let lineNumber = UILabel()
-#endif
         let textField = TextField()
         
         
@@ -149,11 +150,9 @@ extension LineEditorView {
             textField.autocapitalizationType = .none
             // textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
-#if DEBUG
             lineNumber.backgroundColor = UIColor.lightGray
             contentView.addSubview(lineNumber)
             lineNumber.accessibilityIdentifier = "LineLabel"
-#endif
             contentView.addSubview(textField)
             
             setupContraints()
@@ -162,36 +161,31 @@ extension LineEditorView {
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
-        
-        private func setupContraints() {
-            textField.translatesAutoresizingMaskIntoConstraints = false
-            
-            var constraints = Array<NSLayoutConstraint>()
-            
-#if DEBUG
-            lineNumber.translatesAutoresizingMaskIntoConstraints = false
-            
-            constraints.append( lineNumber.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
-            constraints.append( lineNumber.widthAnchor.constraint(equalToConstant: 35 ) )
-            constraints.append( lineNumber.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
 
-            constraints.append( textField.leadingAnchor.constraint(equalTo: lineNumber.trailingAnchor, constant: 5) )
-#else
-            constraints.append( textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
-#endif
+        private var lineConstraints = Array<NSLayoutConstraint>()
+
+        private func setupContraints() {
             
-            constraints.append( textField.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -15.0) )
-            constraints.append( textField.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
+            lineNumber.translatesAutoresizingMaskIntoConstraints = false
+            lineConstraints.append( lineNumber.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
+            lineConstraints.append( lineNumber.widthAnchor.constraint(equalToConstant: 35 ) )
+            lineConstraints.append( lineNumber.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
+
+            textField.translatesAutoresizingMaskIntoConstraints = false
+            lineConstraints.append( textField.leadingAnchor.constraint(equalTo: lineNumber.trailingAnchor, constant: 5) )
+            lineConstraints.append( textField.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -15.0) )
+            lineConstraints.append( textField.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
             
-            NSLayoutConstraint.activate(constraints)
+            NSLayoutConstraint.activate(lineConstraints)
         }
         
         func update( at indexPath: IndexPath,
                      coordinator: LineEditorView.Coordinator ) {
-                         
-#if DEBUG
-            lineNumber.text = "\(indexPath.row)"
-#endif
+               
+            lineNumber.text             = "\(indexPath.row)"
+            lineNumber.isHidden         = !coordinator.linesController.showLine
+            lineConstraints[3].isActive = coordinator.linesController.showLine
+
             if textField.delegate == nil {
                 textField.delegate = coordinator
             }
@@ -225,15 +219,36 @@ extension LineEditorView {
                 if oldValue != fontSize {
                     
                     font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-                    
-                    tableView.reloadData()
                 }
             }
         }
+        
+        var showLine:Bool = true
 
         private(set) var font:UIFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
         
 
+        func updateState( fontSize:CGFloat, showLine:Bool ) {
+            
+            var update = false
+            
+            if self.fontSize != fontSize {
+                update = true
+                self.fontSize = fontSize
+                
+            }
+            
+            if self.showLine != showLine {
+                update = true
+                self.showLine = showLine
+            }
+            
+            if update {
+                tableView.reloadData()
+            }
+        }
+        
+        
         public override func viewDidLoad() {
             
             tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
