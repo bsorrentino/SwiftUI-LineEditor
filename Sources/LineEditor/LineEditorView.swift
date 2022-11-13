@@ -152,6 +152,7 @@ extension LineEditorView {
 #if DEBUG
             lineNumber.backgroundColor = UIColor.lightGray
             contentView.addSubview(lineNumber)
+            lineNumber.accessibilityIdentifier = "LineLabel"
 #endif
             contentView.addSubview(textField)
             
