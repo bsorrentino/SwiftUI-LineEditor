@@ -68,7 +68,7 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
 }
 
 // MARK: IndexPath extension
-extension IndexPath {
+extension IndexPath  {
 
     func isValid<T>( in slice:Array<T> ) -> Bool {
         guard self.row >= slice.startIndex && self.row < slice.endIndex else  {
@@ -428,6 +428,8 @@ extension LineEditorView {
             else {
                 owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
             }
+            
+            reloadRows(from: min( sourceIndexPath, destinationIndexPath ) )
         }
         
         // MARK: - UITableViewDelegate
