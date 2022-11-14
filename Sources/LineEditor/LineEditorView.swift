@@ -70,6 +70,14 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
 // MARK: IndexPath extension
 extension IndexPath  {
 
+    func isLast<T>( in slice:Array<T> ) -> Bool {
+        self.row == slice.endIndex - 1
+    }
+
+    func isEndIndex<T>( in slice:Array<T> ) -> Bool {
+        self.row == slice.endIndex
+    }
+ 
     func isValid<T>( in slice:Array<T> ) -> Bool {
         guard self.row >= slice.startIndex && self.row < slice.endIndex else  {
             return false
@@ -422,7 +430,7 @@ extension LineEditorView {
         
         public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
             
-            if isLastItem( at: destinationIndexPath ) {
+            if destinationIndexPath.isLast( in: owner.items ) {
                 owner.items.append( owner.items.remove(at: sourceIndexPath.row) )
             }
             else {
@@ -523,14 +531,6 @@ extension LineEditorView {
 // MARK: - Coordinator::ItemActions
 extension LineEditorView.Coordinator  {
     
-    func isLastItem( at indexPath: IndexPath ) -> Bool {
-        indexPath.row == owner.items.endIndex - 1
-    }
-
-    func isItemsEndIndex( at indexPath: IndexPath ) -> Bool {
-        indexPath.row == owner.items.endIndex
-    }
-    
     func updateItem( at index: Int, withText text: String ) {
         if let item = Element(rawValue: text ) {
             owner.items[ index ] = item
@@ -594,7 +594,7 @@ extension LineEditorView.Coordinator  {
 
         linesController.tableView.performBatchUpdates {
             
-            if  isItemsEndIndex( at: newIndexPath ) {
+            if  newIndexPath.isEndIndex( in: owner.items ) {
                 owner.items.append( newItem)
             }
             else {
