@@ -8,12 +8,17 @@
 import SwiftUI
 import LineEditor
 
+class Model : ObservableObject {
+    
+    @Published var items = (0...50).map { Item( rawValue: "line\($0)" ) }
+}
+
 struct ContentView: View {
     
     @State var fontSize:CGFloat = 15
     @State var showLine:Bool = false
 
-    @State var items = (0...50).map { Item( rawValue: "line\($0)" ) }
+    @StateObject var model = Model()
     
     
     var body: some View {
@@ -21,7 +26,7 @@ struct ContentView: View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $items, fontSize: $fontSize, showLine: $showLine)
+            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $model.items, fontSize: $fontSize, showLine: $showLine)
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Line Editor")
                 .toolbar {
@@ -37,7 +42,7 @@ struct ContentView: View {
                 }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .onChange(of: items ) {newValue in
+        .onChange(of: model.items ) {newValue in
             newValue.enumerated().forEach { ( index, item ) in
                 print( "\(index)) \(item.rawValue)" )
             }
