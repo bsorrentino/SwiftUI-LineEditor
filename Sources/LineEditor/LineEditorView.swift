@@ -393,7 +393,7 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-            true
+            return indexPath.isValid(in: owner.items)
         }
         
         public func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
@@ -417,7 +417,7 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-            true
+            return indexPath.isValid(in: owner.items)
         }
         
         public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
