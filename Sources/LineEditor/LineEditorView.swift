@@ -48,19 +48,21 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     
     public func makeUIViewController(context: Context) -> Lines {
         let uiViewController = context.coordinator.linesController
-        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
+//        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
         
         return uiViewController
     }
     
-    public func updateUIViewController(_ uiViewController: Lines, context: Context) {
+    public func updateUIViewController(_ uiViewController: Lines, context: Context)  {
         
         if let isEditing = editMode?.wrappedValue.isEditing {
             // print( "editMode: \(isEditing)")
             uiViewController.isEditing = isEditing
         }
         
-        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
+        Task {
+            await uiViewController.updateState(fontSize: fontSize, showLine: showLine)
+        }
         
         // items.forEach { print( $0 ) }
     }
@@ -93,7 +95,7 @@ extension IndexPath  {
     }
 }
 
-// MARK: - Data Model
+
 extension LineEditorView {
     
     // MARK: - TextField
@@ -133,6 +135,7 @@ extension LineEditorView {
         }
     }
     
+    // MARK: - UITableViewCell
     public class Line : UITableViewCell {
 
         let lineNumber = UILabel()
@@ -217,7 +220,7 @@ extension LineEditorView {
         }
     }
     
-    
+    // MARK: - UITableViewController
     public class Lines : UITableViewController {
         
         private var timerCancellable: Cancellable?
@@ -236,7 +239,7 @@ extension LineEditorView {
         private(set) var font:UIFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
         
 
-        func updateState( fontSize:CGFloat, showLine:Bool ) {
+        func updateState( fontSize:CGFloat, showLine:Bool ) async  {
             
             var update = false
             
@@ -252,7 +255,9 @@ extension LineEditorView {
             }
             
             if update {
-                tableView.reloadData()
+                await MainActor.run {
+                    tableView.reloadData()
+                }
             }
         }
         
@@ -367,15 +372,17 @@ extension LineEditorView {
 //            }
 //            linesController.tableView.reloadRows(at: reloadIndexes, with: .none)
             
-            linesController.tableView.reloadData()
+            //linesController.tableView.reloadData()
+            
+            print( "model.count: \(owner.items.count) - cell.count: \(linesController.tableView.visibleCells.count) ")
         }
         
-        private func disabledCell() -> UITableViewCell {
-            let cell =  UITableViewCell()
-            cell.selectionStyle = .none
-            cell.isUserInteractionEnabled = false
-            return cell
-        }
+//        private func disabledCell() -> UITableViewCell {
+//            let cell =  UITableViewCell()
+//            cell.selectionStyle = .none
+//            cell.isUserInteractionEnabled = false
+//            return cell
+//        }
 
         public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
             owner.items.count
@@ -383,12 +390,12 @@ extension LineEditorView {
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-            guard indexPath.isValid( in: owner.items ) else {
-                fatalError( "index is no longer valid. indexPath:\(indexPath.row) in [\(owner.items.startIndex), \(owner.items.endIndex)]")
-            }
+//            guard indexPath.isValid( in: owner.items ) else {
+//                fatalError( "index is no longer valid. indexPath:\(indexPath.row) in [\(owner.items.startIndex), \(owner.items.endIndex)]")
+//            }
 
             guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
-                return disabledCell()
+                fatalError( "tableView.dequeueReusableCell returns NIL")
             }
             
             
@@ -404,16 +411,13 @@ extension LineEditorView {
             return indexPath.isValid(in: owner.items)
         }
         
+        
         public func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
             switch( editingStyle ) {
             case .delete:
-                print( "delete at \(indexPath.row)" )
-                owner.items.remove(at: indexPath.row)
-                tableView.beginUpdates()
-                tableView.deleteRows(at: [indexPath], with: .fade)
-                tableView.endUpdates()
-                //tableView.reloadData()
-                reloadRows(from: indexPath)
+                Task {
+                    await deleteItem(in: tableView, atRow: indexPath)
+                }
             case .insert:
                 // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
                 print( "insert" )
@@ -429,15 +433,9 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-            
-            if destinationIndexPath.isLast( in: owner.items ) {
-                owner.items.append( owner.items.remove(at: sourceIndexPath.row) )
+            Task {
+                await moveItem(in: tableView, fromRow: sourceIndexPath, toRow: destinationIndexPath)
             }
-            else {
-                owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
-            }
-            
-            reloadRows(from: min( sourceIndexPath, destinationIndexPath ) )
         }
         
         // MARK: - UITableViewDelegate
@@ -496,7 +494,9 @@ extension LineEditorView {
                         ( index == 0 ) ? nil : Element(rawValue: value)
                     }
                     
-                    self.addItemsBelow(elements, at: indexPath)
+                    Task {
+                        await self.addItemsBelow(elements, in: self.linesController.tableView, atRow: indexPath)
+                    }
                 }
                 
                 return result
@@ -528,8 +528,35 @@ extension LineEditorView {
 }
 
 
-// MARK: - Coordinator::ItemActions
+// MARK: - Coordinator::Update Model
 extension LineEditorView.Coordinator  {
+    
+    
+    func moveItem( in tableView: UITableView, fromRow sourceIndexPath: IndexPath, toRow destinationIndexPath: IndexPath ) async {
+        
+        if destinationIndexPath.isLast( in: owner.items ) {
+            owner.items.append( owner.items.remove(at: sourceIndexPath.row) )
+        }
+        else {
+            owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
+        }
+        
+        await MainActor.run {
+            reloadRows(from: min( sourceIndexPath, destinationIndexPath ) )
+        }
+
+    }
+
+    func deleteItem( in tableView: UITableView, atRow indexPath: IndexPath ) async {
+
+        owner.items.remove(at: indexPath.row)
+        await MainActor.run {
+            
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            self.reloadRows(from: indexPath)
+
+        }
+    }
     
     func updateItem( at index: Int, withText text: String ) {
         if let item = Element(rawValue: text ) {
@@ -538,29 +565,20 @@ extension LineEditorView.Coordinator  {
 
     }
         
-    func addItemAbove() {
+    func addItemAbove( in tableView: UITableView, atRow indexPath: IndexPath) async {
 
-        if let indexPath = linesController.tableView.indexPathForSelectedRow {
-            
-            if let newItem = Element(rawValue: "") {
+        if let newItem = Element(rawValue: "") {
 
-                linesController.tableView.performBatchUpdates {
-                    owner.items.insert( newItem, at: indexPath.row )
-                    self.linesController.tableView.insertRows(at: [indexPath], with: .automatic )
-                        
-                } completion: { [unowned self] success in
-                    
-                    self.reloadRows(from: indexPath)
-                    self.linesController.becomeFirstResponder(at: indexPath, withRetries: 0)
-                    
-                }
-
+            owner.items.insert( newItem, at: indexPath.row )
+            await MainActor.run {
+                tableView.insertRows(at: [indexPath], with: .automatic )
+                self.reloadRows(from: indexPath)
+                self.linesController.becomeFirstResponder(at: indexPath, withRetries: 0)
             }
         }
-
     }
 
-    func addItemsBelow( _ items: [Element], at indexPath: IndexPath ) {
+    func addItemsBelow( _ items: [Element], in tableView: UITableView, atRow indexPath: IndexPath ) async  {
         
         let indexes = items
             .enumerated()
@@ -570,67 +588,52 @@ extension LineEditorView.Coordinator  {
                 return i
             }
 
-        linesController.tableView.performBatchUpdates {
-                
-            self.linesController.tableView.insertRows(at: indexes, with: .automatic )
-            
-        } completion: { [unowned self] success in
-
-            if let last = indexes.last {
-                self.reloadRows( from: last )
-                self.linesController.becomeFirstResponder(at: last, withRetries: 5)
-            }
-            
-            
+        await MainActor.run {
+            tableView.insertRows(at: indexes, with: .automatic )
+            self.reloadRows( from: indexes.last! )
+            self.linesController.becomeFirstResponder(at: indexes.last! , withRetries: 5)
         }
-
     }
     
-    private func addItemBelow( _ newItem: Element, at indexPath: IndexPath ) {
+    private func addItemBelow( _ newItem: Element, in tableView: UITableView, atRow indexPath: IndexPath ) async {
         
         let newIndexPath = IndexPath( row: indexPath.row + 1,
                                       section: indexPath.section )
 
 
-        linesController.tableView.performBatchUpdates {
-            
-            if  newIndexPath.isEndIndex( in: owner.items ) {
-                owner.items.append( newItem)
-            }
-            else {
-                owner.items.insert( newItem, at: newIndexPath.row )
-            }
-            self.linesController.tableView.insertRows(at: [newIndexPath], with: .automatic )
-            
-        } completion: { [unowned self] success in
-
-            self.reloadRows( from: newIndexPath )
-
-            self.linesController.becomeFirstResponder(at: newIndexPath, withRetries: 5)
-            
+        if  newIndexPath.isEndIndex( in: owner.items ) {
+            owner.items.append( newItem)
         }
-
+        else {
+            owner.items.insert( newItem, at: newIndexPath.row )
+        }
+    
+        await MainActor.run {
+            tableView.insertRows(at: [newIndexPath], with: .automatic )
+            reloadRows( from: newIndexPath )
+            linesController.becomeFirstResponder(at: newIndexPath, withRetries: 5)
+        }
     }
     
-    func addItemBelow() {
+    func addItemBelow() async {
         
         if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: "" ) {
                 
-                addItemBelow( newItem, at: indexPath)
+                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
             }
         }
     }
     
 
-    func cloneItem() {
+    func cloneItem() async {
         
         if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
             if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue  ) {
                 
-                addItemBelow( newItem, at: indexPath)
+                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
             }
         }
     }
@@ -674,7 +677,9 @@ extension LineEditorView.Coordinator {
 
                 if let values = symbol.additionalValues {
                     
-                    addItemsBelow(values.compactMap { Element( rawValue: $0) }, at: indexPath)
+                    Task {
+                        await addItemsBelow(values.compactMap { Element( rawValue: $0) }, in: linesController.tableView, atRow: indexPath)
+                    }
                 }
                 // toggleCustomKeyobard()
             }
@@ -769,7 +774,9 @@ extension LineEditorView.Coordinator  {
         
         let addBelowTitle = NSLocalizedString("Add Below", comment: "")
         let addBelowAction = UIAction(title: addBelowTitle) { [weak self] action in
-            self?.addItemBelow()
+            Task {
+                await self?.addItemBelow()
+            }
         }
         let addBelow = UIBarButtonItem(title: addBelowTitle,
                                        image: nil,
@@ -777,7 +784,13 @@ extension LineEditorView.Coordinator  {
         
         let addAboveTitle = NSLocalizedString("Add Above", comment: "")
         let addAboveAction = UIAction(title: addBelowTitle) { [weak self] action in
-            self?.addItemAbove()
+            
+            if let tableView = self?.linesController.tableView, let indexPath = tableView.indexPathForSelectedRow {
+                
+                Task {
+                    await self?.addItemAbove( in: tableView, atRow: indexPath )
+                }
+            }
         }
         let addAbove = UIBarButtonItem(title: addAboveTitle,
                                        image: nil,
@@ -823,18 +836,28 @@ extension LineEditorView.Coordinator  {
         let addAboveAction =
         UIAction(title: NSLocalizedString("Add Above", comment: ""),
                  image: UIImage(systemName: "arrow.up.square")) { [weak self] action in
-            self?.addItemAbove()
+            if let tableView = self?.linesController.tableView, let indexPath = tableView.indexPathForSelectedRow {
+                
+                Task {
+                    await self?.addItemAbove( in: tableView, atRow: indexPath )
+                }
+            }
         }
         let addBelowAction =
         UIAction(title: NSLocalizedString("Add Below", comment: ""),
                  image: UIImage(systemName: "arrow.down.square")) { [weak self]  action in
-            self?.addItemBelow()
+            
+            Task {
+                await self?.addItemBelow()
+            }
         }
         let cloneRowAction =
         UIAction(title: NSLocalizedString("Clone", comment: ""),
                  image: UIImage(systemName: "plus.square.on.square"),
                  attributes: .destructive) { [weak self] action in
-            self?.cloneItem()
+            Task {
+                await self?.cloneItem()
+            }
         }
         return  UIMenu(title: "", children: [addAboveAction, addBelowAction, cloneRowAction])
 

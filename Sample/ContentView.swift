@@ -43,9 +43,12 @@ struct ContentView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onChange(of: model.items ) {newValue in
-            newValue.enumerated().forEach { ( index, item ) in
-                print( "\(index)) \(item.rawValue)" )
-            }
+            
+            print( "model.count: \(newValue.count)")
+            
+//            newValue.enumerated().forEach { ( index, item ) in
+//                print( "\(index)) \(item.rawValue)" )
+//            }
             
             
         }
