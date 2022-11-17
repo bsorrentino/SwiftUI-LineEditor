@@ -48,23 +48,17 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     
     public func makeUIViewController(context: Context) -> Lines {
         let uiViewController = context.coordinator.linesController
-//        uiViewController.updateState(fontSize: fontSize, showLine: showLine)
         
         return uiViewController
     }
     
     public func updateUIViewController(_ uiViewController: Lines, context: Context)  {
         
-        if let isEditing = editMode?.wrappedValue.isEditing {
-            // print( "editMode: \(isEditing)")
-            uiViewController.isEditing = isEditing
-        }
-        
         Task {
-            await uiViewController.updateState(fontSize: fontSize, showLine: showLine)
+            await uiViewController.updateState(fontSize: fontSize,
+                                               showLine: showLine,
+                                               isEditing: editMode?.wrappedValue.isEditing ?? false)
         }
-        
-        // items.forEach { print( $0 ) }
     }
 
 }
@@ -201,10 +195,12 @@ extension LineEditorView {
                 textField.delegate = coordinator
             }
             
+            #if _CONTEXT_MENU
             if textField.rightView == nil {
                 textField.rightView = coordinator.rightView
                 textField.rightViewMode = .whileEditing
             }
+            #endif
             
             if textField.inputAccessoryView == nil {
                 textField.inputAccessoryView = coordinator.inputAccessoryView
@@ -239,22 +235,31 @@ extension LineEditorView {
         private(set) var font:UIFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
         
 
-        func updateState( fontSize:CGFloat, showLine:Bool ) async  {
+        func updateState( fontSize:CGFloat, showLine:Bool, isEditing: Bool ) async  {
             
-            var update = false
+            var requestReload = false
             
             if self.fontSize != fontSize {
-                update = true
+                requestReload = true
                 self.fontSize = fontSize
                 
             }
             
             if self.showLine != showLine {
-                update = true
+                requestReload = true
                 self.showLine = showLine
             }
             
-            if update {
+            if( self.isEditing != isEditing ) {
+                
+                if isEditing {
+                    let _ = resignTextFieldFirstResponder()
+                }
+                
+                self.isEditing = isEditing
+            }
+             
+            if requestReload {
                 await MainActor.run {
                     tableView.reloadData()
                 }
@@ -270,7 +275,7 @@ extension LineEditorView {
             isEditing = false
         }
                 
-        func findFirstTextFieldResponder() -> LineEditorView.TextField? {
+        func findTextFieldFirstResponder() -> LineEditorView.TextField? {
             
             return tableView.visibleCells
                 .compactMap { cell in
@@ -282,7 +287,15 @@ extension LineEditorView {
                 }
         }
         
-        private func becomeFirstResponder( at indexPath: IndexPath ) -> Bool {
+        func resignTextFieldFirstResponder() -> Bool {
+            guard let textField = findTextFieldFirstResponder() else {
+                return false
+            }
+            
+            return textField.resignFirstResponder()
+        }
+        
+        private func becomeTextFieldFirstResponder( at indexPath: IndexPath ) -> Bool {
             var done = false
             if let cell = tableView.cellForRow(at: indexPath) as? LineEditorView.Line {
                 done  = cell.textField.becomeFirstResponder()
@@ -290,20 +303,20 @@ extension LineEditorView {
             return done
         }
         
-        func becomeFirstResponder( at indexPath: IndexPath, withRetries retries: Int ) {
+        func becomeTextFieldFirstResponder( at indexPath: IndexPath, withRetries retries: Int ) {
             
             timerCancellable?.cancel()
             
-            if !becomeFirstResponder(at: indexPath) {
+            if !self.becomeTextFieldFirstResponder(at: indexPath) {
                 tableView.scrollToRow(at: indexPath, at: .bottom, animated: true);
                 
                 timerCancellable = Timer.publish(every: 0.5, on: .main, in: .default)
                     .autoconnect()
                     .prefix( max(retries,1) )
-                    .sink { [weak self] _ in
+                    .sink { [unowned self] _ in
                         
-                        if let self = self, self.becomeFirstResponder( at: indexPath)  {
-                            print( "becomeFirsResponder: done!")
+                        if self.becomeTextFieldFirstResponder( at: indexPath)  {
+//                            print( "becomeFirsResponder: done!")
                             self.timerCancellable?.cancel()
                         }
 
@@ -341,9 +354,11 @@ extension LineEditorView {
             makeInputAccesoryView()
         }()
         
+        #if _CONTEXT_MENU
         lazy var rightView: UIView = {
             makeContextMenuView()
         }()
+        #endif
 
         
         init(owner: LineEditorView ) {
@@ -362,37 +377,11 @@ extension LineEditorView {
         
         // MARK: - UITableViewDataSource
         
-        private func reloadRows( from indexPath: IndexPath  ) {
-//            guard indexPath.isValid( in: owner.items ) else {
-//                return
-//            }
-//
-//            let reloadIndexes = Array(indexPath.row...owner.items.count).map { row in
-//                IndexPath( row: row, section: indexPath.section)
-//            }
-//            linesController.tableView.reloadRows(at: reloadIndexes, with: .none)
-            
-            //linesController.tableView.reloadData()
-            
-            print( "model.count: \(owner.items.count) - cell.count: \(linesController.tableView.visibleCells.count) ")
-        }
-        
-//        private func disabledCell() -> UITableViewCell {
-//            let cell =  UITableViewCell()
-//            cell.selectionStyle = .none
-//            cell.isUserInteractionEnabled = false
-//            return cell
-//        }
-
         public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
             owner.items.count
         }
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
-//            guard indexPath.isValid( in: owner.items ) else {
-//                fatalError( "index is no longer valid. indexPath:\(indexPath.row) in [\(owner.items.startIndex), \(owner.items.endIndex)]")
-//            }
 
             guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
                 fatalError( "tableView.dequeueReusableCell returns NIL")
@@ -532,6 +521,20 @@ extension LineEditorView {
 extension LineEditorView.Coordinator  {
     
     
+    private func reloadVisibleRows( startingFrom indexPath: IndexPath  ) async {
+        guard indexPath.isValid( in: owner.items ), let visibleRows = linesController.tableView.indexPathsForVisibleRows  else {
+            return
+        }
+        
+        let reloadIndexes = visibleRows.filter { ip in
+            ip.row >= indexPath.row
+        }
+        
+        await MainActor.run {
+            linesController.tableView.reloadRows(at: reloadIndexes, with: .none)
+        }
+    }
+
     func moveItem( in tableView: UITableView, fromRow sourceIndexPath: IndexPath, toRow destinationIndexPath: IndexPath ) async {
         
         if destinationIndexPath.isLast( in: owner.items ) {
@@ -541,9 +544,7 @@ extension LineEditorView.Coordinator  {
             owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
         }
         
-        await MainActor.run {
-            reloadRows(from: min( sourceIndexPath, destinationIndexPath ) )
-        }
+        await reloadVisibleRows(startingFrom: min( sourceIndexPath, destinationIndexPath ) )
 
     }
 
@@ -551,11 +552,9 @@ extension LineEditorView.Coordinator  {
 
         owner.items.remove(at: indexPath.row)
         await MainActor.run {
-            
             tableView.deleteRows(at: [indexPath], with: .automatic)
-            self.reloadRows(from: indexPath)
-
         }
+        await self.reloadVisibleRows(startingFrom: indexPath)
     }
     
     func updateItem( at index: Int, withText text: String ) {
@@ -572,9 +571,10 @@ extension LineEditorView.Coordinator  {
             owner.items.insert( newItem, at: indexPath.row )
             await MainActor.run {
                 tableView.insertRows(at: [indexPath], with: .automatic )
-                self.reloadRows(from: indexPath)
-                self.linesController.becomeFirstResponder(at: indexPath, withRetries: 0)
             }
+            await self.reloadVisibleRows(startingFrom: indexPath)
+            
+            self.linesController.becomeTextFieldFirstResponder(at: indexPath, withRetries: 0)
         }
     }
 
@@ -590,9 +590,12 @@ extension LineEditorView.Coordinator  {
 
         await MainActor.run {
             tableView.insertRows(at: indexes, with: .automatic )
-            self.reloadRows( from: indexes.last! )
-            self.linesController.becomeFirstResponder(at: indexes.last! , withRetries: 5)
         }
+        
+        await self.reloadVisibleRows( startingFrom: indexes.last! )
+        
+        self.linesController.becomeTextFieldFirstResponder(at: indexes.last! , withRetries: 5)
+
     }
     
     private func addItemBelow( _ newItem: Element, in tableView: UITableView, atRow indexPath: IndexPath ) async {
@@ -610,9 +613,11 @@ extension LineEditorView.Coordinator  {
     
         await MainActor.run {
             tableView.insertRows(at: [newIndexPath], with: .automatic )
-            reloadRows( from: newIndexPath )
-            linesController.becomeFirstResponder(at: newIndexPath, withRetries: 5)
         }
+        
+        await reloadVisibleRows( startingFrom: newIndexPath )
+
+        linesController.becomeTextFieldFirstResponder(at: newIndexPath, withRetries: 5)
     }
     
     func addItemBelow() async {
@@ -721,7 +726,7 @@ extension LineEditorView.Coordinator {
         
 //        print( "toggleCustomKeyobard: \(self.showCustomKeyboard)" )
         
-        guard let textField = linesController.findFirstTextFieldResponder() else {
+        guard let textField = linesController.findTextFieldFirstResponder() else {
             return
         }
         
