@@ -167,21 +167,33 @@ extension LineEditorView {
             fatalError("init(coder:) has not been implemented")
         }
 
-        private var lineConstraints = Array<NSLayoutConstraint>()
+        private var textFieldLeadingContraintsRelativeToLineNumber:NSLayoutConstraint?
 
         private func setupContraints() {
             
+            var lineConstraints = Array<NSLayoutConstraint>()
+
             lineNumber.translatesAutoresizingMaskIntoConstraints = false
             lineConstraints.append( lineNumber.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5) )
             lineConstraints.append( lineNumber.widthAnchor.constraint(equalToConstant: 35 ) )
             lineConstraints.append( lineNumber.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
 
             textField.translatesAutoresizingMaskIntoConstraints = false
-            lineConstraints.append( textField.leadingAnchor.constraint(equalTo: lineNumber.trailingAnchor, constant: 5) )
+
+            let textFieldLeadingContraints = textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5)
+            textFieldLeadingContraints.priority = UILayoutPriority(500)
+            
+            lineConstraints.append( textFieldLeadingContraints )
             lineConstraints.append( textField.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -15.0) )
             lineConstraints.append( textField.heightAnchor.constraint(equalTo: contentView.heightAnchor) )
             
             NSLayoutConstraint.activate(lineConstraints)
+
+            textFieldLeadingContraintsRelativeToLineNumber =
+                textField.leadingAnchor.constraint(equalTo: lineNumber.trailingAnchor, constant: 5)
+            textFieldLeadingContraintsRelativeToLineNumber?.priority = UILayoutPriority(1000)
+            
+
         }
         
         func update( at indexPath: IndexPath,
@@ -189,8 +201,8 @@ extension LineEditorView {
                
             lineNumber.text             = "\(indexPath.row)"
             lineNumber.isHidden         = !coordinator.linesController.showLine
-            lineConstraints[3].isActive = coordinator.linesController.showLine
-
+            textFieldLeadingContraintsRelativeToLineNumber?.isActive = !lineNumber.isHidden
+            
             if textField.delegate == nil {
                 textField.delegate = coordinator
             }
