@@ -104,7 +104,18 @@ extension LineEditorView {
         
         private(set) var isPastingContent:Bool = false
         
-        
+      
+        func getAndResetPastingContent() -> [String]? {
+            
+            guard isPastingContent, let strings = UIPasteboard.general.string  else {
+                return nil
+            }
+            
+            isPastingContent = false
+            
+            return strings.components(separatedBy: "\n")
+        }
+   
         open override func paste(_ sender: Any?) {
             isPastingContent = true
             super.paste(sender)
@@ -155,9 +166,9 @@ extension LineEditorView {
             textField.autocapitalizationType = .none
             // textField.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
             textField.returnKeyType = .done
+            lineNumber.accessibilityIdentifier = "LineLabel"
             lineNumber.backgroundColor = UIColor.lightGray
             contentView.addSubview(lineNumber)
-            lineNumber.accessibilityIdentifier = "LineLabel"
             contentView.addSubview(textField)
             
             setupContraints()
@@ -460,8 +471,11 @@ extension LineEditorView {
                 return false
             }
             
-            if let text = textField.text, let range = Range(range, in: text) {
-                if let item = Element(rawValue: text.replacingCharacters(in: range, with: input)) {
+            if let previousText = textField.text, let rangeInText = Range(range, in: previousText) {
+                
+                let updatedText = previousText.replacingCharacters(in: rangeInText, with: input)
+                
+                if let item = Element( rawValue: updatedText ) {
                     owner.items[ indexPath.row ] = item
                 }
             }
@@ -470,22 +484,14 @@ extension LineEditorView {
 
         }
         
-        private func getFromClipboard() -> [String]? {
-            
-            guard let strings = UIPasteboard.general.string  else {
-                return nil
-            }
-                
-            return strings.components(separatedBy: "\n")
-        }
-        
+     
         public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString input: String) -> Bool {
             
             guard let textField = textField as? LineEditorView.TextField else {
                 return false
             }
     
-            if textField.isPastingContent, let lines = getFromClipboard() {
+            if let lines = textField.getAndResetPastingContent() {
 
                 let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
 
