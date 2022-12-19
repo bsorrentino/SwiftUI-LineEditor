@@ -459,7 +459,7 @@ extension LineEditorView {
      
         // MARK: - UITextFieldDelegate
         
-        private func shouldChangeCharactersIn(_ textField: LineEditorView.TextField, in range: NSRange, replacementString input: String) -> Bool {
+        internal func shouldChangeCharactersIn(_ textField: LineEditorView.TextField, in range: NSRange, replacementString input: String) -> Bool {
             
             // skip newline
             // https://stackoverflow.com/a/44939369/521197
