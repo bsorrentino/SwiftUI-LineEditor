@@ -102,16 +102,20 @@ extension LineEditorView {
             return cell
         }
         
-        private(set) var isPastingContent:Bool = false
+        private/*(set)*/ var isPastingContent:Bool = false
         
       
         func getAndResetPastingContent() -> [String]? {
             
-            guard isPastingContent, let strings = UIPasteboard.general.string  else {
+            guard isPastingContent else {
                 return nil
             }
             
             isPastingContent = false
+            
+            guard let strings = UIPasteboard.general.string  else {
+                return nil
+            }
             
             return strings.components(separatedBy: "\n")
         }
