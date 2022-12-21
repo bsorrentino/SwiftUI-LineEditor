@@ -87,6 +87,11 @@ extension IndexPath  {
         }
         return self
     }
+    
+    @inline(__always)
+    func add( row: Int) -> IndexPath {
+        IndexPath( row: self.row + row, section: self.section )
+    }
 }
 
 
@@ -532,6 +537,24 @@ extension LineEditorView {
         }
         
         public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
+            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+                return false
+            }
+            
+            if let nextIndex = indexPath.add( row: 1 ).testValid(in: owner.items) {
+                
+                linesController.becomeTextFieldFirstResponder(at: nextIndex, withRetries: 1)
+                return true
+            }
+            else {
+                if let newItem = Element(rawValue: "") {
+                    Task {
+                        await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath )
+                    }
+                    return true
+                }
+            }
+            
             return false
         }
     }
@@ -622,9 +645,7 @@ extension LineEditorView.Coordinator  {
     
     private func addItemBelow( _ newItem: Element, in tableView: UITableView, atRow indexPath: IndexPath ) async {
         
-        let newIndexPath = IndexPath( row: indexPath.row + 1,
-                                      section: indexPath.section )
-
+        let newIndexPath = indexPath.add( row: 1 )
 
         if  newIndexPath.isEndIndex( in: owner.items ) {
             owner.items.append( newItem)
