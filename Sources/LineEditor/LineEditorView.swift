@@ -540,20 +540,24 @@ extension LineEditorView {
             guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return false
             }
+
+
             
-            if let nextIndex = indexPath.add( row: 1 ).testValid(in: owner.items) {
-                
-                linesController.becomeTextFieldFirstResponder(at: nextIndex, withRetries: 1)
-                return true
-            }
-            else {
+            // Move cursor to next line or adds item below if doesn't exist
+//            if let nextIndex = indexPath.add( row: 1 ).testValid(in: owner.items) {
+//
+//                linesController.becomeTextFieldFirstResponder(at: nextIndex, withRetries: 1)
+//                return true
+//            }
+//            else {
+                // Add item below
                 if let newItem = Element(rawValue: "") {
                     Task {
                         await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath )
                     }
                     return true
                 }
-            }
+//            }
             
             return false
         }
