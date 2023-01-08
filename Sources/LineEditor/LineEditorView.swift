@@ -18,12 +18,16 @@ public protocol LineEditorKeyboardSymbol {
 
 public protocol LineEditorKeyboard : View  {
  
-    init( onHide: @escaping () -> Void, onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void )
+    var onHide: () -> Void { get }
+    var onPressSymbol: (LineEditorKeyboardSymbol) -> Void { get }
     
 }
 
+
 public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: LineEditorKeyboard>: UIViewControllerRepresentable {
-    
+   
+    public typealias KeyboardContent = (_ onHide: @escaping () -> Void, _ onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void) -> KeyboardView
+
     @Environment(\.editMode) private var editMode
     
     public typealias UIViewControllerType = Lines
@@ -32,14 +36,18 @@ public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: Li
     @Binding var fontSize:CGFloat
     @Binding var showLine:Bool
 
-    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat>, showLine:Binding<Bool> ) {
+    private var keyboardView: KeyboardContent
+    
+    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat>, showLine:Binding<Bool>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
+        
         self._items     = items
         self._fontSize  = fontSize
         self._showLine  = showLine
+        self.keyboardView = keyboardView
     }
 
-    public init( items: Binding<Array<Element>> ) {
-        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false) )
+    public init( items: Binding<Array<Element>>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
+        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false), keyboardView: keyboardView )
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -755,9 +763,9 @@ extension LineEditorView.Coordinator {
     // creation Input View
     private func makeCustomKeyboardView( for textField: LineEditorView.TextField ) -> UIView  {
         
-        let keyboardView = KeyboardView(
-            onHide: toggleCustomKeyobard,
-            onPressSymbol: { [weak self] symbol in
+        let keyboardView = owner.keyboardView(
+            /*onHide:*/ toggleCustomKeyobard,
+            /*onPressSymbol:*/ { [weak self] symbol in
                 self?.processSymbol(symbol, on: textField)
             })
         
@@ -950,6 +958,8 @@ struct LineEditorView_Previews: PreviewProvider {
             Item(rawValue: "Item4"),
             Item(rawValue: "Item5"),
             Item(rawValue: "Item6")
-        ] ))
+        ] ), keyboardView: { onHide, onPressSymbol in
+            Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
+        })
     }
 }
