@@ -16,6 +16,8 @@ class Model : ObservableObject {
 
 struct ContentView: View {
     
+    @State private var selectedTab = "Key2"
+    
     @State var fontSize:CGFloat = 15
     @State var showLine:Bool = true
 
@@ -27,9 +29,11 @@ struct ContentView: View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<Item, SimpleLineEditorKeyboard>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
+            LineEditorView<Item, KeyboardSymbol>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
                 onHide, onPressSymbol in
                 SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
+                    .environment(\.keyboardSelectedTab, $selectedTab)
+                    
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Line Editor")
