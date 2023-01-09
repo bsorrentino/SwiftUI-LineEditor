@@ -9,32 +9,25 @@ import SwiftUI
 import Combine
 
 
-public protocol LineEditorKeyboardSymbol {
+public protocol LineEditorKeyboardSymbol : Identifiable<String> {
     
     var value: String {get}
     
     var additionalValues: [String]? {get}
 }
 
-public protocol LineEditorKeyboard : View  {
- 
-    var onHide: () -> Void { get }
-    var onPressSymbol: (LineEditorKeyboardSymbol) -> Void { get }
-    
-}
-
-
-public struct LineEditorView<Element: RawRepresentable<String>, KeyboardView: LineEditorKeyboard>: UIViewControllerRepresentable {
+public struct LineEditorView<Element: RawRepresentable<String>, Symbol: LineEditorKeyboardSymbol>: UIViewControllerRepresentable {
    
-    public typealias KeyboardContent = (_ onHide: @escaping () -> Void, _ onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void) -> KeyboardView
+    public typealias KeyboardContent = (_ onHide: @escaping () -> Void,
+                                        _ onPressSymbol: @escaping (Symbol) -> Void) -> any View
 
     @Environment(\.editMode) private var editMode
     
     public typealias UIViewControllerType = Lines
     
-    @Binding var items:Array<Element>
-    @Binding var fontSize:CGFloat
-    @Binding var showLine:Bool
+    @Binding private var items:Array<Element>
+    @Binding private var fontSize:CGFloat
+    @Binding private var showLine:Bool
 
     private var keyboardView: KeyboardContent
     
@@ -722,7 +715,7 @@ extension LineEditorView.Coordinator {
                 
     }
     
-    func processSymbol(_ symbol: LineEditorKeyboardSymbol, on textField: LineEditorView.TextField) {
+    func processSymbol(_ symbol: Symbol, on textField: LineEditorView.TextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
         if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.selectedTextRange {
@@ -769,7 +762,7 @@ extension LineEditorView.Coordinator {
                 self?.processSymbol(symbol, on: textField)
             })
         
-        let controller = UIHostingController( rootView: keyboardView )
+        let controller = UIHostingController( rootView: AnyView(keyboardView) )
                 
         controller.view.frame = makeCustomKeyboardRect()
         
@@ -927,16 +920,20 @@ extension LineEditorView.Coordinator  {
 
 struct LineEditorView_Previews: PreviewProvider {
     
-    struct Keyboard: LineEditorKeyboard {
+    struct KeyboardSymbol : LineEditorKeyboardSymbol {
+        var value: String
+        
+        var additionalValues: [String]?
+        
+        var id: String
+        
+    }
+    
+    struct Keyboard: View {
         
         var onHide:() -> Void
-        var onPressSymbol: (LineEditorKeyboardSymbol) -> Void
-
-        init(onHide: @escaping () -> Void, onPressSymbol: @escaping (LineEditorKeyboardSymbol) -> Void) {
-            self.onHide = onHide
-            self.onPressSymbol = onPressSymbol
-        }
-        
+        var onPressSymbol: (KeyboardSymbol) -> Void
+  
         var body : some View {
             EmptyView()
         }
@@ -951,7 +948,7 @@ struct LineEditorView_Previews: PreviewProvider {
     }
     
     static var previews: some View {
-        LineEditorView<Item, Keyboard>( items: Binding.constant( [
+        LineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
             Item(rawValue: "Item1"),
             Item(rawValue: "Item2"),
             Item(rawValue: "Item3"),
