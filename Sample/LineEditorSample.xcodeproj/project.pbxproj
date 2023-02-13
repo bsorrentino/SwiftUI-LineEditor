@@ -29,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A001F83229995B63007BB5E1 /* SyntaxTextField.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = SyntaxTextField.playground; path = ../SyntaxTextField.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		A0143775291C09D700FD0A69 /* LineEditorSampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LineEditorSampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0143777291C09D700FD0A69 /* LineEditorSampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorSampleUITests.swift; sourceTree = "<group>"; };
 		A0A9E37528FDAC7400B7606C /* LineEditorSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditorSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,6 +73,7 @@
 		A0A9E36C28FDAC7400B7606C = {
 			isa = PBXGroup;
 			children = (
+				A001F83229995B63007BB5E1 /* SyntaxTextField.playground */,
 				A0F329142902A2C900E0C47C /* Packages */,
 				A0F3290A2902A1C600E0C47C /* Assets.xcassets */,
 				A0F329092902A1C600E0C47C /* Item.swift */,
