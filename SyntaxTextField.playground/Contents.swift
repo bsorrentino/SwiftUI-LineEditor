@@ -3,32 +3,34 @@
 import SwiftUI
 import PlaygroundSupport
 
-
-struct SyntaxTextData:  CustomStringConvertible {
-    
-    var token: String = ""
-    var trailingText:String = ""
-    
-    var description:String {
-        (token.isEmpty) ? trailingText : "\(token) \(trailingText)"
-    }
-    
-
+struct SyntaxTextData {
+    var value: String
+    var isToken: Bool
 }
+
 
 class SyntaxTextObject : ObservableObject {
     var textElements: Array<SyntaxTextData> = []
 
-    
-
-    func setTrailingText( _ text: String, at index: Int ) {
+    func setText( _ text: String, at index: Int ) {
         guard index < textElements.endIndex else { return }
-        textElements[ index ].trailingText = text
+        guard !textElements[ index ].isToken else { return }
+        
+        textElements[ index ].value = text
+    }
+    
+    func getText( at index: Int ) -> String? {
+        guard index < textElements.endIndex else { return nil }
+        guard !textElements[ index ].isToken else { return nil }
+
+        return textElements[ index ].value
     }
 
-    func getTrailingToken( at index: Int ) -> String? {
+    func getToken( at index: Int ) -> String? {
         guard index < textElements.endIndex else { return nil  }
-        return textElements[ index ].token
+        let e = textElements[ index ]
+        guard e.isToken else { return nil }
+        return e.value
     }
 
     func removeElement( at index: Int ) {
@@ -37,9 +39,12 @@ class SyntaxTextObject : ObservableObject {
     }
     
     func evaluate() -> String {
-        textElements
-            .reduce("") { partialResult, data in
-                    partialResult + "\(data) "
+        textElements.forEach { data in
+            print( "{ value: \(data.value), isToken: \(data.isToken)" )
+        }
+        return textElements
+            .reduce("") { (partialResult, data) in
+                partialResult + "\(data.value) "
             }
         
     }
@@ -57,11 +62,14 @@ class SyntaxTextObject : ObservableObject {
         textElements = text.components(separatedBy: " ")
             .enumerated()
             .filter { _, element in !element.isEmpty }
-            .map { _, element in
-                SyntaxTextData( token: element, trailingText: "" )
+            .flatMap { _, element in
+                [
+                    SyntaxTextData( value: element, isToken: true ),
+                    SyntaxTextData( value: "", isToken: false ),
+                ]
         }
         if textElements.isEmpty {
-            textElements = [ SyntaxTextData( token: "", trailingText: "" )]
+            textElements = [ SyntaxTextData( value: "", isToken: false )]
         }
         return textElements.indices
     }
@@ -70,13 +78,19 @@ class SyntaxTextObject : ObservableObject {
 struct SyntaxTextView : View {
     @EnvironmentObject private var syntaxTextObject: SyntaxTextObject
 
-    var index: Int
-    @State var text: String = ""
+    private var index: Int
+    @State private var text: String = ""
 
+    init( index: Int ) {
+        self.index = index
+    }
+    
     var body: some View {
         HStack {
-            let token = syntaxTextObject.getTrailingToken( at: index )
-            if let token, !token.isEmpty {
+            let token = syntaxTextObject.getToken( at: index )
+            
+            if let token {
+                
                 ZStack(alignment: .trailing) {
                     Text( token )
                         .padding( EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 18))
@@ -96,16 +110,24 @@ struct SyntaxTextView : View {
                     
                 }
             }
-            TextField( "", text: $text , onEditingChanged: { editing in
-                if editing {
-                    syntaxTextObject.setTrailingText( text, at: index )
+            else {
+                TextField( "", text: $text , onEditingChanged: { editing in
+                    if editing {
+                        syntaxTextObject.setText( text, at: index )
+                    }
+                    
+                }, onCommit: {
+                    syntaxTextObject.setText( text, at: index )
+                    syntaxTextObject.objectWillChange.send()
+                    
+                })
+                .onAppear {
+                    if let value = syntaxTextObject.getText( at: index ) {
+                        text = value
+                    }
                 }
-                
-            }, onCommit: {
-                syntaxTextObject.setTrailingText( text, at: index )
-                syntaxTextObject.objectWillChange.send()
-
-            })
+                .frame(minWidth: 15)
+            }
         }
     }
 }
