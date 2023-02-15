@@ -19,14 +19,13 @@ extension String.StringInterpolation {
 }
 
 
-let keywords = /(?i)^\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\s+class|state|autonumber(\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\b/
+let line_begin_keywords = /(?i)^\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\s+class|state|autonumber(\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\b/
+
+let whole_line_keywords = /(?i)^\s*(split( again)?|endif|repeat|start|stop|end|end\s+fork|end\s+split|fork( again)?|detach|end\s+box|top\s+to\s+bottom\s+direction|left\s+to\s+right\s+direction)\s*$/
 
 func match( with text: String ) -> Bool {
-    
-    return text.firstMatch(of: keywords) != nil
-    
+    return text.firstMatch(of: line_begin_keywords) != nil
 }
-
 
 func evaluate( data: Array<String> ) throws  -> Array<SyntaxText.Data> {
     
@@ -50,7 +49,7 @@ func evaluate( data: Array<String> ) throws  -> Array<SyntaxText.Data> {
     
     try data.forEach { item in
 
-        if match( with: item ) {
+        if match( with: item )  {
             if let currentItem = currentNonTokenItem {
                 result.append( currentItem )
                 currentNonTokenItem = nil

@@ -40,7 +40,7 @@ class SyntaxTextObject : ObservableObject {
     
     func evaluate() -> String {
         textElements.forEach { data in
-            print( "{ value: \(data.value), isToken: \(data.isToken)" )
+            print( "{ value: \(data.value), isToken: \(data.isToken) }" )
         }
         return textElements
             .reduce("") { (partialResult, data) in
@@ -49,28 +49,75 @@ class SyntaxTextObject : ObservableObject {
         
     }
 
-    let keywords = /(?i)^\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\s+class|state|autonumber(\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\b/
+    let line_begin_keywords = /(?i)^\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\s+class|state|autonumber(\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\b/
 
-    func match( with text: String ) -> Bool {
-        
-        return text.firstMatch(of: keywords) != nil
-        
-    }
+    let whole_line_keywords = /(?i)^\s*(split( again)?|endif|repeat|start|stop|end|end\s+fork|end\s+split|fork( again)?|detach|end\s+box|top\s+to\s+bottom\s+direction|left\s+to\s+right\s+direction)\s*$/
+
+    let other_keywords = /(?i)\b(as|{(static|abstract)\})\b/
     
+    func parse( strings: Array<String> ) -> Array<SyntaxTextData> {
+        
+        var result = Array<SyntaxTextData>()
+
+        var currentNonTokenItem:SyntaxTextData?
+
+        let merge = { ( left: SyntaxTextData?, right: String ) in
+            
+            guard let left else {
+                return SyntaxTextData( value: right, isToken: false)
+            }
+            
+            if left.isToken {
+                throw NSError( domain: "value '\(left.value)' is a token", code: -1)
+            }
+            
+            return SyntaxTextData( value: "\(left.value) \(right)", isToken: false)
+
+        }
+        
+        strings.forEach { string in
+
+            if  string.firstMatch(of: line_begin_keywords) != nil ||
+                string.firstMatch(of: whole_line_keywords) != nil ||
+                string.firstMatch(of: other_keywords) != nil
+            {
+                if let currentItem = currentNonTokenItem {
+                    result.append( currentItem )
+                    currentNonTokenItem = nil
+                }
+                result.append( SyntaxTextData( value: string, isToken: true ) )
+            }
+            else {
+                currentNonTokenItem =  try? merge( currentNonTokenItem, string )
+            }
+
+        }
+        if let currentNonTokenItem {
+            result.append( currentNonTokenItem )
+        }
+        else if result.isEmpty {
+            result.append(  SyntaxTextData( value: "", isToken: false ) )
+        }
+        return result
+
+    }
+
     func tokens( from text: String ) -> Range<Int> {
         
-        textElements = text.components(separatedBy: " ")
-            .enumerated()
-            .filter { _, element in !element.isEmpty }
-            .flatMap { _, element in
-                [
-                    SyntaxTextData( value: element, isToken: true ),
-                    SyntaxTextData( value: "", isToken: false ),
-                ]
-        }
-        if textElements.isEmpty {
-            textElements = [ SyntaxTextData( value: "", isToken: false )]
-        }
+        textElements = parse( strings: text.components(separatedBy: " ") )
+        
+//        textElements = text.components(separatedBy: " ")
+//            .enumerated()
+//            .filter { _, element in !element.isEmpty }
+//            .flatMap { _, element in
+//                [
+//                    SyntaxTextData( value: element, isToken: true ),
+//                    SyntaxTextData( value: "", isToken: false ),
+//                ]
+//        }
+//        if textElements.isEmpty {
+//            textElements = [ SyntaxTextData( value: "", isToken: false )]
+//        }
         return textElements.indices
     }
 }
@@ -162,7 +209,6 @@ struct SyntaxTextField : View {
             }
         }
     }
-
     
 }
 
