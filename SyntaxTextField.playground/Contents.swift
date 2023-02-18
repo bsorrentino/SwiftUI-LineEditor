@@ -140,11 +140,9 @@ struct SyntaxTextView : View {
                 
                 ZStack(alignment: .trailing) {
                     Text( token )
-                        .padding( EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 18))
-                        .background(.red)
-        //                .cornerRadius(15)
-                        .clipShape(Capsule())
-                    
+                        .padding( EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 18))
+                        .overlay( Capsule(style: .continuous)
+                            .stroke(.black, lineWidth: 1) )
                     Button( action: {
                         syntaxTextObject.removeElement(at: index)
                         syntaxTextObject.objectWillChange.send()
@@ -214,14 +212,18 @@ struct SyntaxTextField : View {
 
 
 struct ContentView: View {
-    @State var text = "token1 token2 token3"
+    @State var text = "participant token1 token2 token3"
     var body: some View {
-        SyntaxTextField( text: $text )
-            .border(.red)
-            .onChange(of: text ) { newValue in
-                print( "onChange: \(newValue)" )
-            }
-            .frame(minWidth: 500, alignment: .center)
+        
+        VStack {
+            SyntaxTextField( text: $text )
+                //.border(.red)
+                .onChange(of: text ) { newValue in
+                    print( "onChange: \(newValue)" )
+                }
+                .padding()
+        }
+        .frame(minWidth: 500, minHeight: 200, alignment: .center)
     }
 }
 
