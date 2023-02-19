@@ -12,7 +12,13 @@ struct LineEditorApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            //ContentView()
+            
+            VStack(alignment: .center) {
+                SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx")
+                    
+            }
+            .frame( height: 50)
         }
     }
 }
