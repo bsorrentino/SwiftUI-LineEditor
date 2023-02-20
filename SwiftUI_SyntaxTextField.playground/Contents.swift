@@ -212,7 +212,7 @@ struct SyntaxTextField : View {
 
 
 struct ContentView: View {
-    @State var text = "participant token1 token2 token3"
+    @State var text = "participant participant token1 token2 token3"
     var body: some View {
         
         VStack {

@@ -15,7 +15,7 @@ struct LineEditorApp: App {
             //ContentView()
             
             GeometryReader{ proxy in
-                SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx", size: proxy.size )
+                SyntaxTextField( text: "participant participant xxxxxxxx", size: proxy.size )
                     
             }
             .frame( height: 50)

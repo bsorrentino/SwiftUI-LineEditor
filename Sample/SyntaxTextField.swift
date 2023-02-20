@@ -132,13 +132,8 @@ class UISyntaxTextView: UIView {
     }
     
     override var intrinsicContentSize: CGSize {
-        
+
         if let subview = self.subviews.first {
-            
-            if let field = subview as? UITextField {
-                return CGSize( width: max( field.frame.size.width, 15 ),
-                               height:   field.frame.size.height )
-            }
             return subview.frame.size
         }
         return .zero
@@ -185,11 +180,12 @@ class UISyntaxTextView: UIView {
                 print( Self.self, #function, "add field[\(index)]: \(value)" )
                 subview.text = value
             }
+            
             subview.translatesAutoresizingMaskIntoConstraints = false
 
             self.addSubview( subview )
 
-            subview.widthAnchor.constraint(greaterThanOrEqualToConstant: 15).isActive = true
+//            subview.widthAnchor.constraint(greaterThanOrEqualToConstant: 15).isActive = true
             subview.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
             
         }
@@ -200,7 +196,6 @@ class UISyntaxTextView: UIView {
         print( Self.self, #function)
         
         if let subview = self.subviews.first {
-            print( "self.size.width=\(self.frame.size.width) - subview.size.width=\(subview.frame.size.width)" )
 
             self.frame.size.width = subview.frame.size.width
         }
@@ -316,8 +311,6 @@ class UISyntaxTextField: UIScrollView {
     }
 
 }
-
-
 
 struct SyntaxTextField : UIViewRepresentable {
     typealias UIViewType = UISyntaxTextField
