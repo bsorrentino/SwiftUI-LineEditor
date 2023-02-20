@@ -14,8 +14,8 @@ struct LineEditorApp: App {
         WindowGroup {
             //ContentView()
             
-            VStack(alignment: .center) {
-                SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx")
+            GeometryReader{ proxy in
+                SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx", size: proxy.size )
                     
             }
             .frame( height: 50)

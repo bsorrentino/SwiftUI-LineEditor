@@ -109,15 +109,18 @@ class SyntaxTextObject {
 }
 
 class UISyntaxTextView: UIView {
+    
     static let TAG = 100
     
     private weak var syntaxTextObject: SyntaxTextObject? = nil
+    
+    weak var delegate:UITextFieldDelegate?
     
     private(set) var index: Int
     
     init( index: Int, syntaxTextObject: SyntaxTextObject ) {
         self.index = index
-        super.init(frame: CGRect(x: 0, y: 0, width: 100, height: 50))
+        super.init(frame: CGRect(x: 0, y: 0, width: 50, height: 50))
         self.tag = UISyntaxTextView.TAG
         self.syntaxTextObject = syntaxTextObject
         
@@ -149,10 +152,10 @@ class UISyntaxTextView: UIView {
 //    }
     
     private func internalInit() {
+        
         //guard let syntaxTextObject else { fatalError("syntaxTextObject is not initialized!" ) }
         guard let syntaxTextObject else { return }
         
-
         let font = UIFont.monospacedDigitSystemFont(ofSize: 15, weight: .light)
         
         if let token = syntaxTextObject.getToken( at: index ) {
@@ -165,42 +168,71 @@ class UISyntaxTextView: UIView {
             subview.layer.cornerRadius = 15
             subview.text = token
             subview.font = font
-            subview.translatesAutoresizingMaskIntoConstraints = false
+//            subview.translatesAutoresizingMaskIntoConstraints = false
             subview.isUserInteractionEnabled = false
             subview.sizeToFit()
-
+            
             self.addSubview( subview )
             
-            //subview.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
-
         } else {
             
             let subview = UITextField()
-            
+            subview.delegate = self
             subview.font = font
-            subview.layer.borderColor = UIColor.black.cgColor
-            subview.layer.borderWidth = 2
+//            subview.layer.borderColor = UIColor.black.cgColor
+//            subview.layer.borderWidth = 2
             if let value = syntaxTextObject.getText( at: index ) {
                 print( Self.self, #function, "add field[\(index)]: \(value)" )
                 subview.text = value
             }
             subview.translatesAutoresizingMaskIntoConstraints = false
-            
+
             self.addSubview( subview )
-            
+
             subview.widthAnchor.constraint(greaterThanOrEqualToConstant: 15).isActive = true
             subview.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
-
-        }
             
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        print( Self.self, #function)
+        
+        if let subview = self.subviews.first {
+            print( "self.size.width=\(self.frame.size.width) - subview.size.width=\(subview.frame.size.width)" )
+
+            self.frame.size.width = subview.frame.size.width
+        }
+
+    }
+
+}
+
+extension UISyntaxTextView : UITextFieldDelegate {
+    
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool
+    {
+//        if let delegate {
+//
+//            let _ = delegate.textField?(textField,
+//                               shouldChangeCharactersIn: range,
+//                               replacementString: string)
+//
+//        }
+        return true
     }
     
 }
 
-class UISyntaxTextField: UIScrollView, UITextInputTraits {
+
+class UISyntaxTextField: UIScrollView {
     
     private var syntaxTextObject  = SyntaxTextObject()
-
+    
+    var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
     
     var text: String  = "" {
         
@@ -214,10 +246,8 @@ class UISyntaxTextField: UIScrollView, UITextInputTraits {
     override init( frame: CGRect ) {
         super.init(frame: frame )
         
-        self.translatesAutoresizingMaskIntoConstraints = false
-        
-        self.layer.borderColor = UIColor.red.cgColor
-        self.layer.borderWidth = 2
+//        self.layer.borderColor = UIColor.red.cgColor
+//        self.layer.borderWidth = 2
 
     }
     
@@ -239,8 +269,10 @@ class UISyntaxTextField: UIScrollView, UITextInputTraits {
         let initValue:UIView? = nil
         let _ = subviews.reduce(initValue) { partialResult, view in
             
+            
             if let prev = partialResult {
-                view.frame.origin.x = prev.frame.origin.x + prev.frame.size.width - 10
+                let width = prev.frame.size.width
+                view.frame.origin.x = padding.left + prev.frame.origin.x + width + padding.right
             }
             
             view.frame.size.height = max_height
@@ -275,22 +307,26 @@ class UISyntaxTextField: UIScrollView, UITextInputTraits {
         calcLayout()
 
     }
-    
     override func layoutSubviews() {
         super.layoutSubviews()
         print( Self.self, #function)
         
+        calcLayout()
+
     }
+
 }
+
 
 
 struct SyntaxTextField : UIViewRepresentable {
     typealias UIViewType = UISyntaxTextField
     
     var text: String
-
+    var size: CGSize
+    
     func makeUIView(context: Context) -> UISyntaxTextField {
-        UISyntaxTextField()
+        UISyntaxTextField( frame: CGRect( origin: .zero, size: size))
     }
     
     func updateUIView(_ uiView: UISyntaxTextField, context: Context) {
@@ -302,10 +338,9 @@ struct SyntaxTextField : UIViewRepresentable {
 
 struct SyntaxTextField_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(alignment: .center) {
-            SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx")
-                
+        GeometryReader{ proxy in
+            SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx", size: proxy.size )
         }
-        .frame( height: 50)
+        .frame( height: 34)
     }
 }
