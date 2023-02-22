@@ -8,6 +8,22 @@
 import SwiftUI
 import UIKit
 
+// [Figure out size of UILabel based on String in Swift](https://stackoverflow.com/a/30450559/521197)
+private extension String {
+
+    func size(font: UIFont) -> CGSize {
+        let infinity:CGFloat = .infinity
+        let constraintRect = CGSize(width: infinity,
+                                    height: infinity)
+        let boundingRect =  self.boundingRect(with: constraintRect,
+                                              options: .usesLineFragmentOrigin,
+                                              attributes: [.font: font],
+                                              context: nil)
+        return boundingRect.size
+    }
+}
+
+
 struct SyntaxTextData {
     var value: String
     var isToken: Bool
@@ -43,14 +59,10 @@ class SyntaxTextObject {
     }
     
     var text:String {
-//        textElements.forEach { data in
-//            print( "{ value: \(data.value), isToken: \(data.isToken) }" )
-//        }
-        return textElements
+        textElements
             .reduce("") { (partialResult, data) in
                 partialResult + "\(data.value) "
             }
-        
     }
     
     lazy var regex:NSRegularExpression? = {
@@ -67,7 +79,7 @@ class SyntaxTextObject {
     
     }
     
-    func parse( _ text: String ) -> Array<SyntaxTextData> {
+    private func internalParse( _ text: String ) -> Array<SyntaxTextData> {
         
         let strings = text.components( separatedBy: " ")
         
@@ -114,10 +126,8 @@ class SyntaxTextObject {
 
     }
 
-    func tokens( from text: String ) -> Range<Int> {
-        
-        textElements = parse( text )
-        return textElements.indices
+    func parse( from text: String ) {
+        textElements = internalParse( text )
     }
 }
 
@@ -130,10 +140,12 @@ class SyntaxTextObject {
 
 class UISyntaxTextView: UIView {
     
-    class PaddingLabel: UIStackView {
+    class TagView: UIStackView {
 
         var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 5)
-
+        var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
+        var onDelete:(() -> Void)?
+        
         private var label = UILabel()
         private var button = UIButton()
         
@@ -148,24 +160,30 @@ class UISyntaxTextView: UIView {
         }
         
         init( ) {
-            super.init( frame: CGRect( x: 0, y: 0, width: 100, height: 10) )
+            super.init( frame: .zero )
             self.isUserInteractionEnabled = false
             self.distribution = .fillProportionally
             self.alignment = .center
             self.isLayoutMarginsRelativeArrangement = true
             self.layoutMargins = padding
-            
-            label.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
+            self.spacing = 0
+            self.isUserInteractionEnabled = true
+
             label.translatesAutoresizingMaskIntoConstraints = false
+            label.font = font
 
             self.addArrangedSubview(label)
             
             button.translatesAutoresizingMaskIntoConstraints = false
             button.setImage(UIImage(systemName: "x.circle"), for: .normal)
-        
+            
+            let delete_action = UIAction( title:"delete" ) { [weak self] _ in
+                self?.onDelete?()
+            }
+            button.addAction( delete_action , for: .touchDown)
+
             self.addArrangedSubview(button)
             
-
         }
         
         required init(coder: NSCoder) {
@@ -173,18 +191,30 @@ class UISyntaxTextView: UIView {
         }
               
         override func sizeToFit() {
-            super.sizeToFit()
+            button.sizeToFit()
             
-            print( Self.self, #function, button.frame.size)
+            var size = CGSize( width: button.frame.size.width + padding.left + padding.right,
+                               height: button.frame.size.height )
             
-//            if let text = label.text {
-//
-//
-//            }
-//            self.frame.size = CGSize( width: button.frame.size.width
-//                                      , height: button.frame.size.height)
+            print( Self.self, #function, button.frame.size, label.frame.size)
+            
+            if let text = label.text {
+                
+                let label_size =  text.size(font: font)
+                size.width += label_size.width * 1.1
+                size.height = max(label_size.height, size.height )
+
+            }
+            
+            size.height += padding.top + padding.bottom
+            size.width += self.spacing
+            
+            self.frame.size = size
         }
     
+        @objc func onRemove() {
+            
+        }
     }
     
     private var syntaxTextObject  = SyntaxTextObject()
@@ -203,13 +233,18 @@ class UISyntaxTextView: UIView {
     var delegate:UISyntaxTextViewDelegate?
     
     
-    private func initTextView( token: String, withIndex index: Int ) -> UIView {
-        let subview = PaddingLabel()
+    private func initTagView( token: String, withIndex index: Int ) -> UIView {
+        let subview = TagView()
         subview.tag = index
         subview.layer.borderColor = UIColor.blue.cgColor
         subview.layer.borderWidth = 2
         subview.layer.cornerRadius = 12
         subview.text = token
+        subview.onDelete = { [weak self] in
+            self?.syntaxTextObject.removeElement(at: index)
+            self?.reload(startingAt: 0 )
+        }
+        
         subview.sizeToFit()
         
         return subview
@@ -220,10 +255,9 @@ class UISyntaxTextView: UIView {
         let subview = UITextField()
         subview.tag = index
         subview.delegate = self
-//        subview.delegate = self
         subview.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .regular)
-//            subview.layer.borderColor = UIColor.black.cgColor
-//            subview.layer.borderWidth = 2
+//        subview.layer.borderColor = UIColor.black.cgColor
+//        subview.layer.borderWidth = 2
         subview.text = text
         
         return subview
@@ -234,11 +268,7 @@ class UISyntaxTextView: UIView {
         
         let initValue:UIView? = nil
         
-        let syntaxTextSubviews = subviews.filter {
-            $0.tag >= 0
-        }
-        
-        let _ = syntaxTextSubviews.reduce( initValue ) { partialResult, view in
+        let _ = subviews.reduce( initValue ) { partialResult, view in
 
             view.frame.size.height = self.frame.size.height
 
@@ -270,23 +300,26 @@ class UISyntaxTextView: UIView {
 
     }
     
-    private func internalInit( from text: String, startingAt start_index: Int  ) {
-        
-        print( Self.self, #function )
+    private func reload( startingAt start_index: Int ) {
+        guard start_index >= 0 && start_index < syntaxTextObject.textElements.endIndex else {
+            return
+        }
 
+        print( Self.self, #function )
+        
         let syntaxTextSubviews = subviews[start_index..<subviews.endIndex]
         
         syntaxTextSubviews.forEach {
             $0.removeFromSuperview()
         }
 
-        let tokens = syntaxTextObject.tokens( from: text )
+        let tokens =  syntaxTextObject.textElements.indices
         
-        tokens[start_index..<tokens.endIndex].forEach { index in
+        tokens.indices[start_index..<tokens.endIndex].forEach { index in
             
             if let token = syntaxTextObject.getToken( at: index ) {
                 
-                let subview = initTextView(token: token, withIndex: index )
+                let subview = initTagView(token: token, withIndex: index )
                                 
                 self.addSubview(subview)
                 
@@ -302,7 +335,15 @@ class UISyntaxTextView: UIView {
                 subview.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
             }
         }
+
+    }
+    private func internalInit( from text: String, startingAt start_index: Int  ) {
         
+        print( Self.self, #function )
+
+        syntaxTextObject.parse( from: text )
+        
+        reload(startingAt: start_index )
     }
     
    
