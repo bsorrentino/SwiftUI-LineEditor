@@ -130,18 +130,59 @@ class SyntaxTextObject {
 
 class UISyntaxTextView: UIView {
     
-    class PaddingLabel: UILabel {
+    class PaddingLabel: UIStackView {
 
-        var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 5)
 
-        override func drawText(in rect: CGRect) {
-            super.drawText(in: rect.inset(by: padding))
+        private var label = UILabel()
+        private var button = UIButton()
+        
+        var text:String? {
+            get {
+                label.text
+            }
+            set {
+                label.text = newValue
+            }
+            
         }
+        
+        init( ) {
+            super.init( frame: CGRect( x: 0, y: 0, width: 100, height: 10) )
+            self.isUserInteractionEnabled = false
+            self.distribution = .fillProportionally
+            self.alignment = .center
+            self.isLayoutMarginsRelativeArrangement = true
+            self.layoutMargins = padding
+            
+            label.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
+            label.translatesAutoresizingMaskIntoConstraints = false
 
-        override var intrinsicContentSize: CGSize {
-            let size = super.intrinsicContentSize
-            return CGSize(width: size.width + padding.left + padding.right,
-                          height: size.height + padding.top + padding.bottom)
+            self.addArrangedSubview(label)
+            
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.setImage(UIImage(systemName: "x.circle"), for: .normal)
+        
+            self.addArrangedSubview(button)
+            
+
+        }
+        
+        required init(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+              
+        override func sizeToFit() {
+            super.sizeToFit()
+            
+            print( Self.self, #function, button.frame.size)
+            
+//            if let text = label.text {
+//
+//
+//            }
+//            self.frame.size = CGSize( width: button.frame.size.width
+//                                      , height: button.frame.size.height)
         }
     
     }
@@ -161,6 +202,7 @@ class UISyntaxTextView: UIView {
 
     var delegate:UISyntaxTextViewDelegate?
     
+    
     private func initTextView( token: String, withIndex index: Int ) -> UIView {
         let subview = PaddingLabel()
         subview.tag = index
@@ -168,11 +210,8 @@ class UISyntaxTextView: UIView {
         subview.layer.borderWidth = 2
         subview.layer.cornerRadius = 12
         subview.text = token
-        subview.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
-//            subview.translatesAutoresizingMaskIntoConstraints = false
-        subview.isUserInteractionEnabled = false
-//        subview.sizeToFit()
-        subview.frame.size = subview.intrinsicContentSize
+        subview.sizeToFit()
+        
         return subview
     }
 
