@@ -23,10 +23,28 @@ private extension String {
     }
 }
 
+protocol SyntaxTextView : UIView {
+    var text:String? { get set }
+}
+ 
+
+struct SyntaxtTextToken {
+    var factory:() -> UIView
+    
+    var regex:NSRegularExpression?
+    
+    init( pattern: String, tokenFactory:@escaping () -> UIView ) {
+        
+        regex = try? NSRegularExpression(pattern: pattern)
+        self.factory = tokenFactory
+
+    }
+}
 
 struct SyntaxTextData {
     var value: String
     var isToken: Bool
+    var tokenViewFactory:(() -> UIView)?
 }
 
 class SyntaxTextObject {
@@ -46,11 +64,11 @@ class SyntaxTextObject {
         return textElements[ index ].value
     }
 
-    func getToken( at index: Int ) -> String? {
+    func getToken( at index: Int ) -> (String, (() -> UIView))?  {
         guard index < textElements.endIndex else { return nil  }
         let e = textElements[ index ]
         guard e.isToken else { return nil }
-        return e.value
+        return ( e.value, e.tokenViewFactory! )
     }
 
     func removeElement( at index: Int ) {
@@ -65,21 +83,21 @@ class SyntaxTextObject {
             }
     }
     
-    lazy var regex:NSRegularExpression? = {
-        let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\\s+class|state|autonumber(\\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\\b"
-
-        return try? NSRegularExpression(pattern: line_begin_keywords)
-    }()
-    
-    func match( _ text: String ) -> Bool {
+   
+    func match( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Bool {
         
         text.components( separatedBy: " ").first { string in
-            regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil
+            if let patterns, let _ = patterns.first(where: { p in
+                p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil })
+            {
+                return true
+            }
+            return false
         } != nil
     
     }
     
-    private func internalParse( _ text: String ) -> Array<SyntaxTextData> {
+    private func internalParse( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Array<SyntaxTextData> {
         
         let strings = text.components( separatedBy: " ")
         
@@ -103,13 +121,14 @@ class SyntaxTextObject {
         
         strings.forEach { string in
 
-            if let _ = regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string))  {
-            // if(  string.firstMatch(of: line_begin_keywords) != nil ) {
-                if let currentItem = currentNonTokenItem {
-                    result.append( currentItem )
-                    currentNonTokenItem = nil
-                }
-                result.append( SyntaxTextData( value: string, isToken: true ) )
+            if let patterns, let token = patterns.first(where: { p in
+                    p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil }) {
+                
+                    if let currentItem = currentNonTokenItem {
+                        result.append( currentItem )
+                        currentNonTokenItem = nil
+                    }
+                result.append( SyntaxTextData( value: string, isToken: true, tokenViewFactory: token.factory ) )
             }
             else {
                 currentNonTokenItem =  try? merge( currentNonTokenItem, string )
@@ -126,8 +145,8 @@ class SyntaxTextObject {
 
     }
 
-    func parse( from text: String ) {
-        textElements = internalParse( text )
+    func parse( from text: String, patterns:Array<SyntaxtTextToken>? ) {
+        textElements = internalParse( text, patterns: patterns )
     }
 }
 
@@ -140,84 +159,8 @@ class SyntaxTextObject {
 
 class UISyntaxTextView: UIView {
     
-    class TagView: UIStackView {
-
-        var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 5)
-        var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
-        var onDelete:(() -> Void)?
-        
-        private var label = UILabel()
-        private var button = UIButton()
-        
-        var text:String? {
-            get {
-                label.text
-            }
-            set {
-                label.text = newValue
-            }
-            
-        }
-        
-        init( ) {
-            super.init( frame: .zero )
-            self.isUserInteractionEnabled = false
-            self.distribution = .fillProportionally
-            self.alignment = .center
-            self.isLayoutMarginsRelativeArrangement = true
-            self.layoutMargins = padding
-            self.spacing = 0
-            self.isUserInteractionEnabled = true
-
-            label.translatesAutoresizingMaskIntoConstraints = false
-            label.font = font
-
-            self.addArrangedSubview(label)
-            
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.setImage(UIImage(systemName: "x.circle"), for: .normal)
-            
-            let delete_action = UIAction( title:"delete" ) { [weak self] _ in
-                self?.onDelete?()
-            }
-            button.addAction( delete_action , for: .touchDown)
-
-            self.addArrangedSubview(button)
-            
-        }
-        
-        required init(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-              
-        override func sizeToFit() {
-            button.sizeToFit()
-            
-            var size = CGSize( width: button.frame.size.width + padding.left + padding.right,
-                               height: button.frame.size.height )
-            
-            print( Self.self, #function, button.frame.size, label.frame.size)
-            
-            if let text = label.text {
-                
-                let label_size =  text.size(font: font)
-                size.width += label_size.width * 1.1
-                size.height = max(label_size.height, size.height )
-
-            }
-            
-            size.height += padding.top + padding.bottom
-            size.width += self.spacing
-            
-            self.frame.size = size
-        }
-    
-        @objc func onRemove() {
-            
-        }
-    }
-    
     private var syntaxTextObject  = SyntaxTextObject()
+    var patterns:Array<SyntaxtTextToken>?
     
     var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
     
@@ -233,21 +176,21 @@ class UISyntaxTextView: UIView {
     var delegate:UISyntaxTextViewDelegate?
     
     
-    private func initTagView( token: String, withIndex index: Int ) -> UIView {
-        let subview = TagView()
+    private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView  {
+//        let subview = UITagView()
         subview.tag = index
         subview.layer.borderColor = UIColor.blue.cgColor
         subview.layer.borderWidth = 2
         subview.layer.cornerRadius = 12
         subview.text = token
+   
+        /*
         subview.onDelete = { [weak self] in
             self?.syntaxTextObject.removeElement(at: index)
             self?.reload(startingAt: 0 )
         }
-        
+        */
         subview.sizeToFit()
-        
-        return subview
     }
 
     private func initTextField( text: String?, withIndex index: Int ) -> UITextField {
@@ -317,9 +260,10 @@ class UISyntaxTextView: UIView {
         
         tokens.indices[start_index..<tokens.endIndex].forEach { index in
             
-            if let token = syntaxTextObject.getToken( at: index ) {
+            if let (token,tokenViewFactory) = syntaxTextObject.getToken( at: index ) {
+                var subview = tokenViewFactory() as! SyntaxTextView
                 
-                let subview = initTagView(token: token, withIndex: index )
+                initTokenView( subview, token: token, withIndex: index )
                                 
                 self.addSubview(subview)
                 
@@ -341,7 +285,7 @@ class UISyntaxTextView: UIView {
         
         print( Self.self, #function )
 
-        syntaxTextObject.parse( from: text )
+        syntaxTextObject.parse( from: text, patterns: patterns )
         
         reload(startingAt: start_index )
     }
@@ -404,7 +348,7 @@ extension UISyntaxTextView: UITextFieldDelegate {
         
         if let _ =  string.rangeOfCharacter(from: CharacterSet.whitespaces) {
 
-            if syntaxTextObject.match(updatedText) {
+            if syntaxTextObject.match(updatedText, patterns: patterns) {
 
                 internalInit( from: text, startingAt: index)
                 
@@ -435,6 +379,14 @@ class UISyntaxTextField: UIViewController {
     let scrollView = UIScrollView()
     let contentView = UISyntaxTextView()
     
+    var patterns:Array<SyntaxtTextToken>? {
+        get {
+            contentView.patterns
+        }
+        set {
+            contentView.patterns = newValue
+        }
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         setupScrollView()
@@ -515,7 +467,15 @@ struct SyntaxTextField : UIViewControllerRepresentable {
     var size: CGSize
     
     func makeUIViewController(context: Context) -> UISyntaxTextField {
-        UISyntaxTextField()
+        let controller = UISyntaxTextField()
+               
+        let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\\s+class|state|autonumber(\\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\\b"
+     
+        controller.patterns = [
+        
+            SyntaxtTextToken( pattern: line_begin_keywords, tokenFactory: {  UITagView() } )
+        ]
+        return controller
     }
     
     func updateUIViewController(_ uiViewController: UISyntaxTextField, context: Context) {
