@@ -25,6 +25,7 @@ private extension String {
 
 protocol SyntaxTextView : UIView {
     var text:String? { get set }
+    var onDelete:(() -> Void)? { get set }
 }
  
 
@@ -48,6 +49,7 @@ struct SyntaxTextData {
 }
 
 class SyntaxTextObject {
+    
     var textElements: Array<SyntaxTextData> = []
 
     func setText( _ text: String, at index: Int ) {
@@ -71,11 +73,6 @@ class SyntaxTextObject {
         return ( e.value, e.tokenViewFactory! )
     }
 
-    func removeElement( at index: Int ) {
-        guard index < textElements.endIndex else { return }
-        textElements.remove(at: index)
-    }
-    
     var text:String {
         textElements
             .reduce("") { (partialResult, data) in
@@ -83,7 +80,6 @@ class SyntaxTextObject {
             }
     }
     
-   
     func match( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Bool {
         
         text.components( separatedBy: " ").first { string in
@@ -97,49 +93,56 @@ class SyntaxTextObject {
     
     }
     
-    private func internalParse( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Array<SyntaxTextData> {
+    private func internalParse( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Array<SyntaxTextData>
+    {
         
         let strings = text.components( separatedBy: " ")
         
         var result = Array<SyntaxTextData>()
 
-        var currentNonTokenItem:SyntaxTextData?
+        var current_non_token_item:SyntaxTextData?
 
         let merge = { ( left: SyntaxTextData?, right: String ) in
             
             guard let left else {
-                return SyntaxTextData( value: right, isToken: false)
+                return SyntaxTextData( value: right,
+                                       isToken: false)
             }
             
             if left.isToken {
                 throw NSError( domain: "value '\(left.value)' is a token", code: -1)
             }
             
-            return SyntaxTextData( value: "\(left.value) \(right)", isToken: false)
-
+            return SyntaxTextData( value: "\(left.value) \(right)",
+                                   isToken: false)
         }
         
         strings.forEach { string in
 
             if let patterns, let token = patterns.first(where: { p in
-                    p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil }) {
+                    p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil })
+            {
                 
-                    if let currentItem = currentNonTokenItem {
-                        result.append( currentItem )
-                        currentNonTokenItem = nil
-                    }
-                result.append( SyntaxTextData( value: string, isToken: true, tokenViewFactory: token.factory ) )
+                if let currentItem = current_non_token_item {
+                    result.append( currentItem )
+                    current_non_token_item = nil
+                }
+                
+                result.append( SyntaxTextData( value: string,
+                                               isToken: true,
+                                               tokenViewFactory: token.factory ) )
             }
             else {
-                currentNonTokenItem =  try? merge( currentNonTokenItem, string )
+                current_non_token_item =  try? merge( current_non_token_item, string )
             }
 
         }
-        if let currentNonTokenItem {
-            result.append( currentNonTokenItem )
+        if let current_non_token_item {
+            result.append( current_non_token_item )
         }
         else if result.isEmpty {
-            result.append(  SyntaxTextData( value: "", isToken: false ) )
+            result.append(  SyntaxTextData( value: "",
+                                            isToken: false ) )
         }
         return result
 
@@ -147,6 +150,43 @@ class SyntaxTextObject {
 
     func parse( from text: String, patterns:Array<SyntaxtTextToken>? ) {
         textElements = internalParse( text, patterns: patterns )
+    }
+    
+    func removeElement( at index: Int) {
+        guard index < textElements.endIndex else { return }
+
+        textElements.remove(at: index)
+        
+        // compact textElements
+        
+        var result = Array<SyntaxTextData>()
+        
+        var current_non_token_string:String?
+
+        textElements.forEach {
+            
+            if( $0.isToken ) {
+                
+                if current_non_token_string != nil {
+                    result.append( SyntaxTextData( value: current_non_token_string!,
+                                                   isToken: false ) )
+                    current_non_token_string = nil
+                }
+                result.append($0)
+            }
+            else if current_non_token_string != nil {
+                current_non_token_string!.append( " \($0.value)" )
+            }
+            else {
+                current_non_token_string = $0.value
+            }
+        }
+        if let current_non_token_string {
+            result.append( SyntaxTextData( value: current_non_token_string,
+                                           isToken: false ) )
+        }
+        
+        textElements = result
     }
 }
 
@@ -176,20 +216,17 @@ class UISyntaxTextView: UIView {
     var delegate:UISyntaxTextViewDelegate?
     
     
-    private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView  {
-//        let subview = UITagView()
+    private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView
+    {
         subview.tag = index
         subview.layer.borderColor = UIColor.blue.cgColor
         subview.layer.borderWidth = 2
         subview.layer.cornerRadius = 12
-        subview.text = token
-   
-        /*
+        subview.text = token   
         subview.onDelete = { [weak self] in
             self?.syntaxTextObject.removeElement(at: index)
             self?.reload(startingAt: 0 )
         }
-        */
         subview.sizeToFit()
     }
 
@@ -261,7 +298,7 @@ class UISyntaxTextView: UIView {
         tokens.indices[start_index..<tokens.endIndex].forEach { index in
             
             if let (token,tokenViewFactory) = syntaxTextObject.getToken( at: index ) {
-                var subview = tokenViewFactory() as! SyntaxTextView
+                let subview = tokenViewFactory() as! SyntaxTextView
                 
                 initTokenView( subview, token: token, withIndex: index )
                                 
@@ -458,23 +495,18 @@ extension UISyntaxTextField: UITextFieldDelegate {
 
 struct SyntaxTextField : UIViewControllerRepresentable {
     
-    
     typealias UIViewControllerType = UISyntaxTextField
     
     typealias UIViewType = UISyntaxTextField
     
     var text: String
-    var size: CGSize
+    var patterns:Array<SyntaxtTextToken>
     
     func makeUIViewController(context: Context) -> UISyntaxTextField {
         let controller = UISyntaxTextField()
-               
-        let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|enum|abstract|class|abstract\\s+class|state|autonumber(\\s+stop|resume)?|activate|deactivate|destroy|newpage|alt|else|opt|loop|par|break|critical|group|box|rectangle|namespace|partition|archimate|sprite|left|right|side|top|bottom)\\b"
-     
-        controller.patterns = [
         
-            SyntaxtTextToken( pattern: line_begin_keywords, tokenFactory: {  UITagView() } )
-        ]
+        controller.patterns = patterns
+        
         return controller
     }
     
@@ -486,11 +518,20 @@ struct SyntaxTextField : UIViewControllerRepresentable {
 }
 
 struct SyntaxTextField_Previews: PreviewProvider {
+    
+    static let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
+ 
     static var previews: some View {
-            GeometryReader{ proxy in
-                SyntaxTextField( text: "participant p1 xxxxxxxx participant xxxxxxxx", size: proxy.size )
-            
-            }
-            .frame( width: .infinity, height: 34)
+        
+        SyntaxTextField(
+            text: "participant p1 xxxxxxxx participant xxxxxxxx",
+            patterns:  [
+                
+                SyntaxtTextToken( pattern: line_begin_keywords,
+                                  tokenFactory: {  UITagView() } )
+            ]
+
+        )
+        .frame( width: .infinity, height: 34)
     }
 }
