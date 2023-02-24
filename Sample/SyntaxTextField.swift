@@ -34,10 +34,16 @@ struct SyntaxtTextToken {
     
     var regex:NSRegularExpression?
     
-    init( pattern: String, tokenFactory:@escaping () -> UIView ) {
+    var skipWhen: (( Int, [String] ) -> Bool )?
+    
+    init( pattern: String,
+          tokenFactory:@escaping () -> UIView,
+          skipWhen: (( Int, [String] ) -> Bool )? = nil )
+    {
         
         regex = try? NSRegularExpression(pattern: pattern)
         self.factory = tokenFactory
+        self.skipWhen = skipWhen
 
     }
 }
@@ -46,12 +52,23 @@ struct SyntaxTextData {
     var value: String
     var isToken: Bool
     var tokenViewFactory:(() -> UIView)?
+    
 }
 
-class SyntaxTextObject {
+class SyntaxTextModel : ObservableObject {
     
-    var textElements: Array<SyntaxTextData> = []
+    private var textElements: Array<SyntaxTextData> = []
 
+    var patterns:Array<SyntaxtTextToken>?
+
+    func indices( from: Int  ) -> Range<Int> {
+        textElements.indices[ from..<textElements.endIndex]
+    }
+    
+    func isValid( index: Int ) -> Bool {
+        index >= 0 && index < textElements.endIndex
+    }
+    
     func setText( _ text: String, at index: Int ) {
         guard index < textElements.endIndex else { return }
         guard !textElements[ index ].isToken else { return }
@@ -80,10 +97,10 @@ class SyntaxTextObject {
             }
     }
     
-    func match( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Bool {
+    func match( _ text: String ) -> Bool {
         
         text.components( separatedBy: " ").first { string in
-            if let patterns, let _ = patterns.first(where: { p in
+            if let _ = patterns?.first(where: { p in
                 p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil })
             {
                 return true
@@ -93,7 +110,7 @@ class SyntaxTextObject {
     
     }
     
-    private func internalParse( _ text: String, patterns:Array<SyntaxtTextToken>? ) -> Array<SyntaxTextData>
+    private func internalParse( _ text: String ) -> Array<SyntaxTextData>
     {
         
         let strings = text.components( separatedBy: " ")
@@ -117,9 +134,12 @@ class SyntaxTextObject {
                                    isToken: false)
         }
         
-        strings.forEach { string in
+        strings.enumerated().forEach { index, string in
 
-            if let patterns, let token = patterns.first(where: { p in
+            if let token = patterns?.filter({ p in
+                guard let skipWhen =  p.skipWhen else { return true }
+                return !skipWhen( index, strings )
+            }).first(where: { p in
                     p.regex?.firstMatch(in: string, range: NSRange(string.startIndex..., in: string)) != nil })
             {
                 
@@ -148,8 +168,9 @@ class SyntaxTextObject {
 
     }
 
-    func parse( from text: String, patterns:Array<SyntaxtTextToken>? ) {
-        textElements = internalParse( text, patterns: patterns )
+    func parse( from text: String ) {
+        textElements = internalParse( text )
+        self.objectWillChange.send()
     }
     
     func removeElement( at index: Int) {
@@ -187,6 +208,7 @@ class SyntaxTextObject {
         }
         
         textElements = result
+        self.objectWillChange.send()
     }
 }
 
@@ -199,15 +221,22 @@ class SyntaxTextObject {
 
 class UISyntaxTextView: UIView {
     
-    private var syntaxTextObject  = SyntaxTextObject()
-    var patterns:Array<SyntaxtTextToken>?
+    private var model  = SyntaxTextModel()
+    
+    var patterns:Array<SyntaxtTextToken>? {
+        get {
+            model.patterns
+        }
+        set {
+            model.patterns = newValue
+        }
+    }
     
     var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
     
     var text: String  = "" {
         
         didSet {
-            print( Self.self, #function, "didSet ")
             internalInit( from: text, startingAt: 0 )
             sizeToFit()
         }
@@ -224,7 +253,7 @@ class UISyntaxTextView: UIView {
         subview.layer.cornerRadius = 12
         subview.text = token   
         subview.onDelete = { [weak self] in
-            self?.syntaxTextObject.removeElement(at: index)
+            self?.model.removeElement(at: index)
             self?.reload(startingAt: 0 )
         }
         subview.sizeToFit()
@@ -281,7 +310,7 @@ class UISyntaxTextView: UIView {
     }
     
     private func reload( startingAt start_index: Int ) {
-        guard start_index >= 0 && start_index < syntaxTextObject.textElements.endIndex else {
+        guard model.isValid( index: start_index ) else {
             return
         }
 
@@ -293,11 +322,9 @@ class UISyntaxTextView: UIView {
             $0.removeFromSuperview()
         }
 
-        let tokens =  syntaxTextObject.textElements.indices
-        
-        tokens.indices[start_index..<tokens.endIndex].forEach { index in
+        model.indices( from: start_index ).forEach { index in
             
-            if let (token,tokenViewFactory) = syntaxTextObject.getToken( at: index ) {
+            if let (token,tokenViewFactory) = model.getToken( at: index ) {
                 let subview = tokenViewFactory() as! SyntaxTextView
                 
                 initTokenView( subview, token: token, withIndex: index )
@@ -307,7 +334,7 @@ class UISyntaxTextView: UIView {
             }
             else {
                 
-                let subview = initTextField( text: syntaxTextObject.getText( at: index), withIndex: index )
+                let subview = initTextField( text: model.getText( at: index), withIndex: index )
                 
                 subview.translatesAutoresizingMaskIntoConstraints = false
                 
@@ -322,7 +349,7 @@ class UISyntaxTextView: UIView {
         
         print( Self.self, #function )
 
-        syntaxTextObject.parse( from: text, patterns: patterns )
+        model.parse( from: text )
         
         reload(startingAt: start_index )
     }
@@ -340,7 +367,7 @@ class UISyntaxTextView: UIView {
 
 extension UISyntaxTextView: UITextFieldDelegate {
 
-    func findFirstTextField( from index: Int ) -> UITextField? {
+    private func findFirstTextField( from index: Int ) -> UITextField? {
     
         for i in index..<subviews.endIndex {
             
@@ -352,7 +379,7 @@ extension UISyntaxTextView: UITextFieldDelegate {
         return nil
     }
 
-    func findFirstTextFieldBackward( from index: Int ) -> UITextField? {
+    private func findFirstTextFieldBackward( from index: Int ) -> UITextField? {
         
         for i in stride(from: index, to: 0, by: -1)  {
             
@@ -364,7 +391,6 @@ extension UISyntaxTextView: UITextFieldDelegate {
         return nil
     }
 
-    
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
                 
         print( Self.self, #function )
@@ -377,15 +403,15 @@ extension UISyntaxTextView: UITextFieldDelegate {
             
         let index = textField.tag
                 
-        syntaxTextObject.setText( updatedText, at: index)
+        model.setText( updatedText, at: index)
 
-        let text = syntaxTextObject.text
+        let text = model.text
         
         print( Self.self, #function, updatedText  )
         
         if let _ =  string.rangeOfCharacter(from: CharacterSet.whitespaces) {
 
-            if syntaxTextObject.match(updatedText, patterns: patterns) {
+            if model.match( updatedText ) {
 
                 internalInit( from: text, startingAt: index)
                 
@@ -528,7 +554,9 @@ struct SyntaxTextField_Previews: PreviewProvider {
             patterns:  [
                 
                 SyntaxtTextToken( pattern: line_begin_keywords,
-                                  tokenFactory: {  UITagView() } )
+                                  tokenFactory: {  UITagView() },
+                                  skipWhen: { index, _ in index > 0 }
+                                )
             ]
 
         )
