@@ -71,7 +71,7 @@ class UITagView: UIStackView, SyntaxTextView {
         size.width += padding.right
         
         size.height += padding.top
-        size.height += max( button.intrinsicContentSize.height, label.intrinsicContentSize.width )
+        size.height += max( button.intrinsicContentSize.height, label.intrinsicContentSize.height )
         size.height += padding.bottom
 
 
