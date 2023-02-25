@@ -10,7 +10,7 @@ import UIKit
 
 class UITagView: UIStackView, SyntaxTextView {
 
-    var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 5)
+    var padding = UIEdgeInsets(top: 2, left: 10, bottom: 2, right: 5)
     var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
     var onDelete:(() -> Void)?
     

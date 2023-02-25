@@ -13,16 +13,28 @@ struct LineEditorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            //ContentView()
-            
-            SyntaxTextField( text: "participant participant xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx",
-                             patterns:  [
-                                 
-                                 SyntaxtTextToken( pattern: line_begin_keywords,
-                                                   tokenFactory: {  UITagView() } )
-                             ]
-)
-            .frame( width: .infinity, height: 50)
+            TabView {
+               
+                ContentView()
+                    .tabItem {
+                        Label("LineEditorView", image: "")
+                    }
+                
+                VStack {
+                    Spacer( minLength: 200)
+                    SyntaxTextField( text: "participant participant xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx",
+                                     patterns:  [
+                                         
+                                         SyntaxtTextToken( pattern: line_begin_keywords,
+                                                           tokenFactory: {  UITagView() } )
+                                     ])
+                    Spacer()
+
+                }
+                .tabItem {
+                    Label("SyntaxTextField", image: "")
+                }
+            }
         }
     }
 }

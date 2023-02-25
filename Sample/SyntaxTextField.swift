@@ -458,9 +458,8 @@ class UISyntaxTextField: UIViewController {
     
     func setupContentView() {
         
-        contentView.sizeToFit()
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        
+
         scrollView.addSubview(contentView)
         
         contentView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor).isActive = true
@@ -486,7 +485,7 @@ class UISyntaxTextField: UIViewController {
         scrollView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
         scrollView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
         scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-        
+
     }
     
     override func viewDidLayoutSubviews() {
@@ -496,6 +495,8 @@ class UISyntaxTextField: UIViewController {
         // Do any additional setup after loading the view
         let size = CGSize( width: contentView.frame.size.width + 50, height: contentView.frame.size.height )
         scrollView.contentSize = size
+        
+        view.frame.size.height = size.height
     }
     
 }
