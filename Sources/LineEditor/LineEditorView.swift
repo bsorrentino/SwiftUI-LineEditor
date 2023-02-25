@@ -97,64 +97,12 @@ extension IndexPath  {
 
 
 extension LineEditorView {
-    
-    // MARK: - TextField
-    class TextField : UITextField {
         
-        var owningCell:Line? {
-            guard let contentView = superview, let cell = contentView.superview as? Line else {
-                return nil
-            }
-            return cell
-        }
-        
-        private/*(set)*/ var isPastingContent:Bool = false
-        
-      
-        func getAndResetPastingContent() -> [String]? {
-            
-            guard isPastingContent else {
-                return nil
-            }
-            
-            isPastingContent = false
-            
-            guard let strings = UIPasteboard.general.string  else {
-                return nil
-            }
-            
-            return strings.components(separatedBy: "\n")
-        }
-   
-        open override func paste(_ sender: Any?) {
-            isPastingContent = true
-            super.paste(sender)
-        }
-
-        override func becomeFirstResponder() -> Bool {
-            isPastingContent = false
-            return super.becomeFirstResponder()
-        }
-        
-        func updateFont( _ newFont: UIFont ) {
-            
-            if self.font == nil || (self.font != nil &&  newFont.pointSize != self.font!.pointSize) {
-                self.font = newFont
-            }
-            
-        }
-
-        @inline(__always)
-        func indexPath( for tableView: UITableView ) -> IndexPath? {
-            owningCell?.indexPath(for: tableView)
-        }
-    }
-    
     // MARK: - UITableViewCell
     public class Line : UITableViewCell {
 
         let lineNumber = UILabel()
-        let textField = TextField()
+        let textField = LineEditorTextField()
         
         
         private var tableView:UITableView {
@@ -308,7 +256,7 @@ extension LineEditorView {
             isEditing = false
         }
                 
-        func findTextFieldFirstResponder() -> LineEditorView.TextField? {
+        func findTextFieldFirstResponder() -> LineEditorTextField? {
             
             return tableView.visibleCells
                 .compactMap { cell in
@@ -469,7 +417,7 @@ extension LineEditorView {
      
         // MARK: - UITextFieldDelegate
         
-        internal func shouldChangeCharactersIn(_ textField: LineEditorView.TextField, in range: NSRange, replacementString input: String) -> Bool {
+        internal func shouldChangeCharactersIn(_ textField: LineEditorTextField, in range: NSRange, replacementString input: String) -> Bool {
             
             // skip newline
             // https://stackoverflow.com/a/44939369/521197
@@ -497,7 +445,7 @@ extension LineEditorView {
      
         public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString input: String) -> Bool {
             
-            guard let textField = textField as? LineEditorView.TextField else {
+            guard let textField = textField as? LineEditorTextField else {
                 return false
             }
     
@@ -524,21 +472,21 @@ extension LineEditorView {
         }
         
         public func textFieldDidBeginEditing(_ textField: UITextField) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorTextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
             linesController.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
         public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorTextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
             linesController.tableView.deselectRow(at: indexPath, animated: false)
         }
         
         public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
-            guard let textField = textField as? LineEditorView.TextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let textField = textField as? LineEditorTextField, let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return false
             }
 
@@ -715,7 +663,7 @@ extension LineEditorView.Coordinator {
                 
     }
     
-    func processSymbol(_ symbol: Symbol, on textField: LineEditorView.TextField) {
+    func processSymbol(_ symbol: Symbol, on textField: LineEditorTextField) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
         if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.selectedTextRange {
@@ -754,7 +702,7 @@ extension LineEditorView.Coordinator {
     }
     
     // creation Input View
-    private func makeCustomKeyboardView( for textField: LineEditorView.TextField ) -> UIView  {
+    private func makeCustomKeyboardView( for textField: LineEditorTextField ) -> UIView  {
         
         let keyboardView = owner.keyboardView(
             /*onHide:*/ toggleCustomKeyobard,
