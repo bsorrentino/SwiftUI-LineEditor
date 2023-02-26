@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import LineEditor
 
 @main
 struct LineEditorApp: App {

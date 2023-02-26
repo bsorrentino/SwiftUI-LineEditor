@@ -8,16 +8,16 @@
 import Foundation
 import UIKit
 
-class UITagView: UIStackView, SyntaxTextView {
+public class UITagView: UIStackView, SyntaxTextView {
 
-    var padding = UIEdgeInsets(top: 2, left: 10, bottom: 2, right: 5)
-    var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
-    var onDelete:(() -> Void)?
+    public var padding = UIEdgeInsets(top: 2, left: 10, bottom: 2, right: 5)
+    public var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
+    public var onDelete:(() -> Void)?
     
     private var label = UILabel()
     private var button = UIButton()
     
-    var text:String? {
+    public var text:String? {
         get {
             label.text
         }
@@ -27,7 +27,7 @@ class UITagView: UIStackView, SyntaxTextView {
         
     }
     
-    init( ) {
+    public init( ) {
         super.init( frame: .zero )
         self.isUserInteractionEnabled = false
         self.distribution = .fillProportionally
@@ -58,7 +58,7 @@ class UITagView: UIStackView, SyntaxTextView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override var intrinsicContentSize:CGSize {
+    override public var intrinsicContentSize:CGSize {
 
         var size = CGSize()
 
@@ -79,7 +79,7 @@ class UITagView: UIStackView, SyntaxTextView {
 
     }
 
-    override func sizeToFit() {
+    override public func sizeToFit() {
 //            button.sizeToFit()
 
 //            var size = CGSize( width: button.frame.size.width + padding.left + padding.right,

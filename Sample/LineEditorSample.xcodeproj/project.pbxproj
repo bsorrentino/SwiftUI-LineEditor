@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		A0143778291C09D700FD0A69 /* LineEditorSampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0143777291C09D700FD0A69 /* LineEditorSampleUITests.swift */; };
 		A0646C3429A29A440042E421 /* SyntaxTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0646C3329A29A440042E421 /* SyntaxTextField.swift */; };
-		A0B019E929A7B5E4009920AF /* TagView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B019E829A7B5E4009920AF /* TagView.swift */; };
 		A0BFBA95290D4B3D008340E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A0BFBA97290D4B3D008340E3 /* Localizable.strings */; };
 		A0F3290C2902A1C700E0C47C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329062902A1C600E0C47C /* ContentView.swift */; };
 		A0F3290D2902A1C700E0C47C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F329082902A1C600E0C47C /* Preview Assets.xcassets */; };
@@ -37,7 +36,6 @@
 		A0646C3329A29A440042E421 /* SyntaxTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxTextField.swift; sourceTree = "<group>"; };
 		A08443FA299BAA66006C8507 /* SyntaxTextFieldUtils.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = SyntaxTextFieldUtils.playground; path = ../SyntaxTextFieldUtils.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		A0A9E37528FDAC7400B7606C /* LineEditorSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditorSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A0B019E829A7B5E4009920AF /* TagView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagView.swift; sourceTree = "<group>"; };
 		A0BFBA96290D4B3D008340E3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A0D019E229A263D50043CF5C /* UIKit_SyntaxTextField.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = UIKit_SyntaxTextField.playground; path = ../UIKit_SyntaxTextField.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		A0F329062902A1C600E0C47C /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -84,7 +82,6 @@
 				A001F83229995B63007BB5E1 /* SwiftUI_SyntaxTextField.playground */,
 				A0F329142902A2C900E0C47C /* Packages */,
 				A0F3290A2902A1C600E0C47C /* Assets.xcassets */,
-				A0B019E829A7B5E4009920AF /* TagView.swift */,
 				A0646C3329A29A440042E421 /* SyntaxTextField.swift */,
 				A0F329092902A1C600E0C47C /* Item.swift */,
 				A0F329062902A1C600E0C47C /* ContentView.swift */,
@@ -248,7 +245,6 @@
 				A0646C3429A29A440042E421 /* SyntaxTextField.swift in Sources */,
 				A0F3290C2902A1C700E0C47C /* ContentView.swift in Sources */,
 				A0F3291A2902A9DE00E0C47C /* LineEditorKeyboard.swift in Sources */,
-				A0B019E929A7B5E4009920AF /* TagView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
