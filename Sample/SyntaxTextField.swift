@@ -456,7 +456,7 @@ class UISyntaxTextField: UIViewController {
         setupContentView()
     }
     
-    func setupContentView() {
+    private func setupContentView() {
         
         contentView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -469,7 +469,7 @@ class UISyntaxTextField: UIViewController {
 
     }
     
-    func setupScrollView() {
+    private func setupScrollView() {
         
         scrollView.delegate = self
         scrollView.showsHorizontalScrollIndicator = false
