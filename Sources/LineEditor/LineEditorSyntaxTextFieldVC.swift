@@ -212,38 +212,56 @@ class SyntaxTextModel : ObservableObject {
 }
 
 
-@MainActor public protocol UISyntaxTextViewDelegate : NSObjectProtocol {
-    
-    func syntaxTextDidChangeText( replacementString string: String)
-
-}
-
 public class UISyntaxTextView: UIView {
     
     private var model  = SyntaxTextModel()
     
     var patterns:Array<SyntaxtTextToken>? {
-        get {
-            model.patterns
-        }
-        set {
-            model.patterns = newValue
-        }
+        get { model.patterns }
+        set { model.patterns = newValue }
     }
     
     var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
     
-    public var text: String  = "" {
-        
+    public var text: String?  = "" {
         didSet {
             internalInit( from: text, startingAt: 0 )
             sizeToFit()
         }
     }
 
-    var delegate:UISyntaxTextViewDelegate?
+    weak var candidateEditingTextField:UITextField? {
+        let textFields = subviews.compactMap { $0 as? UITextField }
+        
+        if let firstResponder = textFields.first(where: { $0.isFirstResponder } ) {
+            return firstResponder
+        }
+        
+        return textFields.first
+    }
     
+    var delegate:UITextFieldDelegate?
+
+    private weak var internalInputView:UIView?
     
+    override public var inputView: UIView? {
+        get { internalInputView }
+        set {
+            internalInputView = newValue
+            subviews.compactMap( { $0 as? UITextField } ).forEach { $0.inputView = newValue }
+        }
+    }
+
+    private weak var internalinputAccessoryView:UIView?
+
+    override public var inputAccessoryView: UIView? {
+        get { internalinputAccessoryView }
+        set {
+            internalinputAccessoryView = newValue
+            subviews.compactMap( { $0 as? UITextField } ).forEach { $0.inputAccessoryView = newValue }
+        }
+    }
+
     private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView
     {
         subview.tag = index
@@ -267,6 +285,8 @@ public class UISyntaxTextView: UIView {
 //        subview.layer.borderColor = UIColor.black.cgColor
 //        subview.layer.borderWidth = 2
         subview.text = text
+        subview.inputView = self.inputView
+        subview.inputAccessoryView = self.inputAccessoryView
         
         return subview
         
@@ -290,6 +310,7 @@ public class UISyntaxTextView: UIView {
         }
 
     }
+    
     override public func sizeToFit() {
         super.sizeToFit()
         
@@ -342,9 +363,13 @@ public class UISyntaxTextView: UIView {
                 subview.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
             }
         }
+        
+        
 
     }
-    private func internalInit( from text: String, startingAt start_index: Int  ) {
+    
+    private func internalInit( from text: String?, startingAt start_index: Int  ) {
+        guard let text else { return }
         
         print( Self.self, #function )
 
@@ -353,7 +378,6 @@ public class UISyntaxTextView: UIView {
         reload(startingAt: start_index )
     }
     
-   
     override public func layoutSubviews() {
         super.layoutSubviews()
         print( Self.self, #function, self.frame.size)
@@ -362,8 +386,17 @@ public class UISyntaxTextView: UIView {
 
     }
 
+    @objc func requestBecomeFirstResponder(_ sender: UITapGestureRecognizer? = nil) {
+        if let lastTextField = subviews.compactMap( { $0 as? UITextField } ).last {
+            lastTextField.becomeFirstResponder()
+        }
+    }
+
 }
 
+//
+// MARK: UITextFieldDelegate extension
+//
 extension UISyntaxTextView: UITextFieldDelegate {
 
     private func findFirstTextField( from index: Int ) -> UITextField? {
@@ -388,6 +421,18 @@ extension UISyntaxTextView: UITextFieldDelegate {
         }
         
         return nil
+    }
+    
+    public func textFieldDidBeginEditing(_ textField: UITextField) {
+        delegate?.textFieldDidBeginEditing?(textField)
+    }
+
+    public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
+        delegate?.textFieldDidEndEditing?(textField)
+    }
+    
+    public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
+        return delegate?.textFieldShouldReturn?(textField) ?? true
     }
 
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
@@ -429,43 +474,86 @@ extension UISyntaxTextView: UITextFieldDelegate {
             
         }
 
-        delegate?.syntaxTextDidChangeText( replacementString: text )
-
+        let _ = delegate?.textField?(textField, shouldChangeCharactersIn: range, replacementString: string ) ?? true
+        
         return true
     }
 }
 
 
-public class LineEditorSyntaxTextFieldVC: UIViewController {
+public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField {
     
-    let scrollView = UIScrollView()
-    public let contentView = UISyntaxTextView()
+    private let scrollView = UIScrollView()
+    private let contentView = UISyntaxTextView()
     
     public var patterns:Array<SyntaxtTextToken>? {
-        get {
-            contentView.patterns
-        }
-        set {
-            contentView.patterns = newValue
-        }
+        get { contentView.patterns }
+        set { contentView.patterns = newValue }
     }
+    
+    var owningCell: UITableViewCell? {
+        guard let contentView = view.superview, let cell = contentView.superview as? UITableViewCell else {
+            return nil
+        }
+        return cell
+
+    }
+    
+    var isPastingContent: Bool = false
+    
+    var delegate: LineEditorTextFieldDelegate?
+    
+    var control: UIControl & UITextInput {
+        guard let result = contentView.candidateEditingTextField else {
+            fatalError("there is no candidateEditingTextField available")
+        }
+        
+        return result
+    }
+    
+    override public var inputView: UIView? {
+        get { contentView.inputView }
+        set { contentView.inputView = newValue }
+    }
+
+    override public var inputAccessoryView: UIView? {
+        get { super.inputAccessoryView }
+        set { contentView.inputAccessoryView = newValue }
+    }
+
+    public var text: String? {
+        get { contentView.text }
+        set { contentView.text = newValue }
+    }
+    
+    public func updateFont(_ newFont: UIFont) {
+        
+    }
+    
     override public func viewDidLoad() {
         super.viewDidLoad()
         setupScrollView()
         setupContentView()
+
+//        view.layer.borderColor = UIColor.red.cgColor
+//        view.layer.borderWidth = 2
+
     }
     
+    
     private func setupContentView() {
-        
+        contentView.delegate = self
+        let tap = UITapGestureRecognizer(target: contentView, action: #selector(contentView.requestBecomeFirstResponder(_:)))
+        contentView.addGestureRecognizer(tap)
+        contentView.isUserInteractionEnabled = true
         contentView.translatesAutoresizingMaskIntoConstraints = false
-
+        
         scrollView.addSubview(contentView)
         
         contentView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor).isActive = true
         contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor).isActive = true
         contentView.topAnchor.constraint(equalTo: scrollView.topAnchor).isActive = true
         contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor).isActive = true
-
     }
     
     private func setupScrollView() {
@@ -474,9 +562,6 @@ public class LineEditorSyntaxTextFieldVC: UIViewController {
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.isScrollEnabled = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-
-//        scrollView.layer.borderColor = UIColor.red.cgColor
-//        scrollView.layer.borderWidth = 2
         
         view.addSubview(scrollView)
         
@@ -484,8 +569,8 @@ public class LineEditorSyntaxTextFieldVC: UIViewController {
         scrollView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
         scrollView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
         scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-
     }
+    
     
     override public func viewDidLayoutSubviews() {
         contentView.sizeToFit()
@@ -495,9 +580,9 @@ public class LineEditorSyntaxTextFieldVC: UIViewController {
         let size = CGSize( width: contentView.frame.size.width + 50, height: contentView.frame.size.height )
         scrollView.contentSize = size
         
-        view.frame.size.height = size.height
+//        view.frame.size.height = size.height
     }
-    
+
 }
 
 extension LineEditorSyntaxTextFieldVC: UIScrollViewDelegate {
@@ -512,10 +597,36 @@ extension LineEditorSyntaxTextFieldVC: UIScrollViewDelegate {
     }
 }
 
-extension LineEditorSyntaxTextFieldVC: UITextFieldDelegate {
-
-    public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        return true
+// MARK: - UITextFieldDelegate
+extension LineEditorSyntaxTextFieldVC : UITextFieldDelegate {
+    
+    public func textFieldDidBeginEditing(_ textField: UITextField) {
+        isPastingContent = false
+        
+        if let delegate {
+            delegate.textFieldDidBeginEditing(self)
+        }
     }
-}
+    
+    public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard let delegate else { return false }
+        
+        return delegate.textField(self, shouldChangeCharactersIn: range, replacementString: string)
 
+    }
+        
+    public func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
+        guard let delegate else { return }
+        
+        delegate.textFieldDidEndEditing(self, reason: reason)
+
+    }
+    
+    public func textFieldShouldReturn(_ textField: UITextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
+        guard let delegate else { return false }
+        
+        return delegate.textFieldShouldReturn(self)
+        
+    }
+
+}

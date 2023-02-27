@@ -8,6 +8,9 @@
 import SwiftUI
 import Combine
 
+typealias LineEditorTextControlVC_1 = LineEditorTextFieldVC
+typealias LineEditorTextControlVC = LineEditorSyntaxTextFieldVC
+
 protocol LineEditorTextField : UIResponderStandardEditActions {
     
     var owningCell:UITableViewCell? { get }
@@ -58,7 +61,7 @@ extension LineEditorTextField {
 
 }
 
-protocol LineEditorTextFieldDelegate {
+@MainActor protocol LineEditorTextFieldDelegate : NSObjectProtocol {
     
     func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool
     
@@ -163,7 +166,7 @@ extension LineEditorView {
     public class Line : UITableViewCell {
 
         let lineNumber = UILabel()
-        let textFieldController = LineEditorTextFieldVC()
+        let textFieldController = LineEditorTextControlVC()
         
         
         private var tableView:UITableView {
@@ -184,6 +187,13 @@ extension LineEditorView {
             contentView.addSubview(textFieldController.view)
             
             setupContraints()
+            
+            let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
+
+            textFieldController.patterns =  [
+                SyntaxtTextToken( pattern: line_begin_keywords,
+                                  tokenFactory: {  UITagView() } )
+            ]
         }
         
         required init?(coder: NSCoder) {
@@ -313,7 +323,7 @@ extension LineEditorView {
             isEditing = false
         }
                 
-        func findTextFieldFirstResponder() -> LineEditorTextFieldVC? {
+        func findTextFieldFirstResponder() -> LineEditorTextControlVC? {
             
             return tableView.visibleCells
                 .compactMap { cell in
@@ -714,7 +724,7 @@ extension LineEditorView.Coordinator {
                 
     }
     
-    func processSymbol(_ symbol: Symbol, on textField: LineEditorTextFieldVC) {
+    func processSymbol(_ symbol: Symbol, on textField: LineEditorTextControlVC) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
         if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.control.selectedTextRange {
@@ -753,7 +763,7 @@ extension LineEditorView.Coordinator {
     }
     
     // creation Input View
-    private func makeCustomKeyboardView( for textField: LineEditorTextFieldVC ) -> UIView  {
+    private func makeCustomKeyboardView( for textField: LineEditorTextControlVC ) -> UIView  {
         
         let keyboardView = owner.keyboardView(
             /*onHide:*/ toggleCustomKeyobard,

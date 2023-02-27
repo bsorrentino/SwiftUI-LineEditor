@@ -22,7 +22,7 @@ struct SyntaxTextField : UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: LineEditorSyntaxTextFieldVC, context: Context) {
-        uiViewController.contentView.text = text
+        uiViewController.text = text
     }
     
 
