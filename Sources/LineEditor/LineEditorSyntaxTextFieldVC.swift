@@ -27,7 +27,6 @@ public protocol SyntaxTextView : UIView {
     var onDelete:(() -> Void)? { get set }
 }
  
-
 public struct SyntaxtTextToken {
     var factory:() -> UIView
     
@@ -221,6 +220,14 @@ public class UISyntaxTextView: UIView {
         set { model.patterns = newValue }
     }
     
+    var font: UIFont? {
+        
+        didSet {
+            subviews.compactMap( { $0 as? UITextField } )
+                    .forEach({ $0.font = font })
+        }
+    }
+    
     var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
     
     public var text: String?  = "" {
@@ -262,6 +269,25 @@ public class UISyntaxTextView: UIView {
         }
     }
 
+    override init( frame: CGRect ) {
+        super.init( frame: frame )
+        let tap = UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:)))
+        self.addGestureRecognizer(tap)
+        self.isUserInteractionEnabled = true
+
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
+        if let lastTextField = subviews.compactMap( { $0 as? UITextField } ).last {
+            lastTextField.becomeFirstResponder()
+        }
+    }
+
+
     private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView
     {
         subview.tag = index
@@ -281,7 +307,7 @@ public class UISyntaxTextView: UIView {
         let subview = UITextField()
         subview.tag = index
         subview.delegate = self
-        subview.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .regular)
+        subview.font = font
 //        subview.layer.borderColor = UIColor.black.cgColor
 //        subview.layer.borderWidth = 2
         subview.text = text
@@ -364,8 +390,6 @@ public class UISyntaxTextView: UIView {
             }
         }
         
-        
-
     }
     
     private func internalInit( from text: String?, startingAt start_index: Int  ) {
@@ -384,12 +408,6 @@ public class UISyntaxTextView: UIView {
         
         internalLayoutSubviews()
 
-    }
-
-    @objc func requestBecomeFirstResponder(_ sender: UITapGestureRecognizer? = nil) {
-        if let lastTextField = subviews.compactMap( { $0 as? UITextField } ).last {
-            lastTextField.becomeFirstResponder()
-        }
     }
 
 }
@@ -527,7 +545,9 @@ public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField 
     }
     
     public func updateFont(_ newFont: UIFont) {
-        
+        if contentView.font == nil || (contentView.font != nil &&  newFont.pointSize != contentView.font!.pointSize) {
+            contentView.font = newFont
+        }
     }
     
     override public func viewDidLoad() {
@@ -540,12 +560,8 @@ public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField 
 
     }
     
-    
     private func setupContentView() {
         contentView.delegate = self
-        let tap = UITapGestureRecognizer(target: contentView, action: #selector(contentView.requestBecomeFirstResponder(_:)))
-        contentView.addGestureRecognizer(tap)
-        contentView.isUserInteractionEnabled = true
         contentView.translatesAutoresizingMaskIntoConstraints = false
         
         scrollView.addSubview(contentView)
