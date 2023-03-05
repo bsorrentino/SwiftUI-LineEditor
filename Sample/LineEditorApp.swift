@@ -16,12 +16,12 @@ struct LineEditorApp: App {
         WindowGroup {
             TabView {
                
-                StandardLineEditorView()
+                StandardEditorView()
                     .tabItem {
                         Label("Standard Line Editor", image: "")
                     }
 
-                SyntaxLineEditorView()
+                SyntaxEditorView()
                     .tabItem {
                         Label("Syntax Line Editor", image: "")
                     }

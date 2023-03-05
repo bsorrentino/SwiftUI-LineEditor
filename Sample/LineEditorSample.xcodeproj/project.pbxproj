@@ -9,10 +9,10 @@
 /* Begin PBXBuildFile section */
 		A0143778291C09D700FD0A69 /* LineEditorSampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0143777291C09D700FD0A69 /* LineEditorSampleUITests.swift */; };
 		A0646C3429A29A440042E421 /* SyntaxTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0646C3329A29A440042E421 /* SyntaxTextField.swift */; };
-		A0A387FE29B4E9EA007EBF0F /* StandardLineEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardLineEditorView.swift */; };
-		A0A387FF29B4E9EA007EBF0F /* StandardLineEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardLineEditorView.swift */; };
-		A0A3880129B4EA98007EBF0F /* SyntaxLineEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A3880029B4EA98007EBF0F /* SyntaxLineEditorView.swift */; };
-		A0A3880229B4EA98007EBF0F /* SyntaxLineEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A3880029B4EA98007EBF0F /* SyntaxLineEditorView.swift */; };
+		A0A387FE29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */; };
+		A0A387FF29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */; };
+		A0A3880129B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A3880029B4EA98007EBF0F /* SyntaxEditorView.swift */; };
+		A0A3880229B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A3880029B4EA98007EBF0F /* SyntaxEditorView.swift */; };
 		A0BFBA95290D4B3D008340E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A0BFBA97290D4B3D008340E3 /* Localizable.strings */; };
 		A0F3290D2902A1C700E0C47C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F329082902A1C600E0C47C /* Preview Assets.xcassets */; };
 		A0F3290E2902A1C700E0C47C /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329092902A1C600E0C47C /* Model.swift */; };
@@ -38,8 +38,8 @@
 		A0143777291C09D700FD0A69 /* LineEditorSampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineEditorSampleUITests.swift; sourceTree = "<group>"; };
 		A0646C3329A29A440042E421 /* SyntaxTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxTextField.swift; sourceTree = "<group>"; };
 		A08443FA299BAA66006C8507 /* SyntaxTextFieldUtils.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = SyntaxTextFieldUtils.playground; path = ../SyntaxTextFieldUtils.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
-		A0A387FD29B4E9EA007EBF0F /* StandardLineEditorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandardLineEditorView.swift; sourceTree = "<group>"; };
-		A0A3880029B4EA98007EBF0F /* SyntaxLineEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxLineEditorView.swift; sourceTree = "<group>"; };
+		A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StandardEditorView.swift; sourceTree = "<group>"; };
+		A0A3880029B4EA98007EBF0F /* SyntaxEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxEditorView.swift; sourceTree = "<group>"; };
 		A0A9E37528FDAC7400B7606C /* LineEditorSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LineEditorSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0BFBA96290D4B3D008340E3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A0D019E229A263D50043CF5C /* UIKit_SyntaxTextField.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = UIKit_SyntaxTextField.playground; path = ../UIKit_SyntaxTextField.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
@@ -89,8 +89,8 @@
 				A0646C3329A29A440042E421 /* SyntaxTextField.swift */,
 				A0F329092902A1C600E0C47C /* Model.swift */,
 				A0F329192902A9DE00E0C47C /* LineEditorKeyboard.swift */,
-				A0A387FD29B4E9EA007EBF0F /* StandardLineEditorView.swift */,
-				A0A3880029B4EA98007EBF0F /* SyntaxLineEditorView.swift */,
+				A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */,
+				A0A3880029B4EA98007EBF0F /* SyntaxEditorView.swift */,
 				A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */,
 				A0BFBA97290D4B3D008340E3 /* Localizable.strings */,
 				A0F329072902A1C600E0C47C /* Preview Content */,
@@ -237,8 +237,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0A3880229B4EA98007EBF0F /* SyntaxLineEditorView.swift in Sources */,
-				A0A387FF29B4E9EA007EBF0F /* StandardLineEditorView.swift in Sources */,
+				A0A3880229B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */,
+				A0A387FF29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */,
 				A0143778291C09D700FD0A69 /* LineEditorSampleUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -247,12 +247,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0A3880129B4EA98007EBF0F /* SyntaxLineEditorView.swift in Sources */,
+				A0A3880129B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */,
 				A0F329102902A1C700E0C47C /* LineEditorApp.swift in Sources */,
 				A0F3290E2902A1C700E0C47C /* Model.swift in Sources */,
 				A0646C3429A29A440042E421 /* SyntaxTextField.swift in Sources */,
 				A0F3291A2902A9DE00E0C47C /* LineEditorKeyboard.swift in Sources */,
-				A0A387FE29B4E9EA007EBF0F /* StandardLineEditorView.swift in Sources */,
+				A0A387FE29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

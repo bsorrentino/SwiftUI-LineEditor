@@ -79,7 +79,7 @@ public protocol LineEditorKeyboardSymbol : Identifiable<String> {
     var additionalValues: [String]? {get}
 }
 
-public struct GenericLineEditorView<Element: RawRepresentable<String>,
+public struct LineEditorView<Element: RawRepresentable<String>,
                              Symbol: LineEditorKeyboardSymbol,
                              TextEditor: LineEditorTextField> : UIViewControllerRepresentable {
    
@@ -161,7 +161,7 @@ extension IndexPath  {
 }
 
 
-extension GenericLineEditorView {
+extension LineEditorView {
         
     // MARK: - UITableViewCell
     public class Line : UITableViewCell {
@@ -226,7 +226,7 @@ extension GenericLineEditorView {
         
         
         func update( at indexPath: IndexPath,
-                     coordinator: GenericLineEditorView.Coordinator ) {
+                     coordinator: LineEditorView.Coordinator ) {
             
             
             lineNumber.text             = "\(indexPath.row)"
@@ -312,7 +312,7 @@ extension GenericLineEditorView {
         
         public override func viewDidLoad() {
             
-            tableView.register(GenericLineEditorView.Line.self, forCellReuseIdentifier: "Cell")
+            tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
             tableView.separatorStyle = .none
 //            tableView.backgroundColor = UIColor.gray
             isEditing = false
@@ -322,7 +322,7 @@ extension GenericLineEditorView {
             
             return tableView.visibleCells
                 .compactMap { cell in
-                    guard let cell = cell as? GenericLineEditorView.Line else { return nil }
+                    guard let cell = cell as? LineEditorView.Line else { return nil }
                     return cell.textFieldController
                 }
                 .first { textField in
@@ -340,7 +340,7 @@ extension GenericLineEditorView {
         
         private func becomeTextFieldFirstResponder( at indexPath: IndexPath ) -> Bool {
             var done = false
-            if let cell = tableView.cellForRow(at: indexPath) as? GenericLineEditorView.Line {
+            if let cell = tableView.cellForRow(at: indexPath) as? LineEditorView.Line {
                 done  = cell.textFieldController.control.becomeFirstResponder()
             }
             return done
@@ -373,7 +373,7 @@ extension GenericLineEditorView {
 }
 
 // MARK: - Coordinator
-extension GenericLineEditorView {
+extension LineEditorView {
     
     
     public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, LineEditorTextFieldDelegate  {
@@ -381,7 +381,7 @@ extension GenericLineEditorView {
         private let ROW_HEIGHT = 30.0
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        private let owner: GenericLineEditorView
+        private let owner: LineEditorView
         
         var items: Array<Element> {
             owner.items
@@ -404,7 +404,7 @@ extension GenericLineEditorView {
         #endif
 
         
-        init(owner: GenericLineEditorView ) {
+        init(owner: LineEditorView ) {
             self.owner = owner
             super.init()
             
@@ -426,7 +426,7 @@ extension GenericLineEditorView {
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-            guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? GenericLineEditorView.Line else {
+            guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
                 fatalError( "tableView.dequeueReusableCell returns NIL")
             }
             
@@ -572,7 +572,7 @@ extension GenericLineEditorView {
 
 
 // MARK: - Coordinator::Update Model
-extension GenericLineEditorView.Coordinator  {
+extension LineEditorView.Coordinator  {
     
     
     private func reloadVisibleRows( startingFrom indexPath: IndexPath  ) async {
@@ -698,7 +698,7 @@ extension GenericLineEditorView.Coordinator  {
 }
 
 // MARK: - Coordinator::Keyboard
-extension GenericLineEditorView.Coordinator {
+extension LineEditorView.Coordinator {
     
     private var keyboardRectPublisher: AnyPublisher<CGRect, Never> {
         // 2.
@@ -814,7 +814,7 @@ extension GenericLineEditorView.Coordinator {
 
 
 // MARK: - Coordinator::UITextField
-extension GenericLineEditorView.Coordinator  {
+extension LineEditorView.Coordinator  {
     
 
     private func makeInputAccesoryView() -> UIView {
@@ -866,7 +866,7 @@ extension GenericLineEditorView.Coordinator  {
 }
 
 // MARK: - Coordinator::ContextMenu
-extension GenericLineEditorView.Coordinator  {
+extension LineEditorView.Coordinator  {
     
     private func makeContextMenuView() -> UIView {
         
@@ -922,8 +922,8 @@ extension GenericLineEditorView.Coordinator  {
 
 }
 
-public typealias LineEditorView<Element: RawRepresentable<String>,
-                                Symbol: LineEditorKeyboardSymbol> = GenericLineEditorView<Element,Symbol,LineEditorTextFieldVC>
+public typealias StandardLineEditorView<Element: RawRepresentable<String>,
+                                Symbol: LineEditorKeyboardSymbol> = LineEditorView<Element,Symbol,LineEditorTextFieldVC>
 
 
 struct GenericLineEditorView_Previews: PreviewProvider {
@@ -957,14 +957,15 @@ struct GenericLineEditorView_Previews: PreviewProvider {
     
     class MyLineEditorTextFieldVC : LineEditorSyntaxTextFieldVC {
         
-        let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
+        static let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
 
+        static let tokens = [
+            SyntaxtTextToken( pattern: line_begin_keywords,
+                              tokenFactory: {  UITagView() } )
+        ]
         override func viewDidLoad() {
             
-            self.patterns =  [
-                SyntaxtTextToken( pattern: line_begin_keywords,
-                                  tokenFactory: {  UITagView() } )
-            ]
+            self.patterns = Self.tokens
             
             super.viewDidLoad()
         }
@@ -973,9 +974,9 @@ struct GenericLineEditorView_Previews: PreviewProvider {
     
     static var previews: some View {
         
-        TabView {
+        Group {
             
-            LineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
+            StandardLineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
                 Item(rawValue: "Item1"),
                 Item(rawValue: "Item2"),
                 Item(rawValue: "Item3"),
@@ -984,11 +985,9 @@ struct GenericLineEditorView_Previews: PreviewProvider {
                 Item(rawValue: "Item6")
             ] ), keyboardView: { onHide, onPressSymbol in
                 Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
-            }).tabItem {
-                Label("Standard", systemImage: "")
-            }
+            })
             
-            GenericLineEditorView<Item, KeyboardSymbol, MyLineEditorTextFieldVC>( items: Binding.constant( [
+            LineEditorView<Item, KeyboardSymbol, MyLineEditorTextFieldVC>( items: Binding.constant( [
                 Item(rawValue: "Item1"),
                 Item(rawValue: "Item2"),
                 Item(rawValue: "Item3"),
@@ -997,9 +996,7 @@ struct GenericLineEditorView_Previews: PreviewProvider {
                 Item(rawValue: "Item6")
             ] ), keyboardView: { onHide, onPressSymbol in
                 Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
-            }).tabItem {
-                Label("Syntax", systemImage: "")
-            }
+            })
 
         }
     }
