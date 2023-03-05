@@ -8,10 +8,7 @@
 import SwiftUI
 import Combine
 
-typealias LineEditorTextControlVC_1 = LineEditorTextFieldVC
-typealias LineEditorTextControlVC = LineEditorSyntaxTextFieldVC
-
-protocol LineEditorTextField : UIResponderStandardEditActions {
+public protocol LineEditorTextField : UIViewController, UIResponderStandardEditActions {
     
     var owningCell:UITableViewCell? { get }
     
@@ -27,6 +24,8 @@ protocol LineEditorTextField : UIResponderStandardEditActions {
 
     var text:String? { get set }
 
+    init()
+    
     func getAndResetPastingContent() -> [String]?
 
     func updateFont( _ newFont: UIFont )
@@ -35,7 +34,7 @@ protocol LineEditorTextField : UIResponderStandardEditActions {
 
 }
 
-extension LineEditorTextField {
+public extension LineEditorTextField {
     
     func getAndResetPastingContent() -> [String]? {
         
@@ -61,7 +60,7 @@ extension LineEditorTextField {
 
 }
 
-@MainActor protocol LineEditorTextFieldDelegate : NSObjectProtocol {
+@MainActor public protocol LineEditorTextFieldDelegate : NSObjectProtocol {
     
     func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool
     
@@ -80,7 +79,9 @@ public protocol LineEditorKeyboardSymbol : Identifiable<String> {
     var additionalValues: [String]? {get}
 }
 
-public struct LineEditorView<Element: RawRepresentable<String>, Symbol: LineEditorKeyboardSymbol>: UIViewControllerRepresentable {
+public struct GenericLineEditorView<Element: RawRepresentable<String>,
+                             Symbol: LineEditorKeyboardSymbol,
+                             TextEditor: LineEditorTextField> : UIViewControllerRepresentable {
    
     public typealias KeyboardContent = (_ onHide: @escaping () -> Void,
                                         _ onPressSymbol: @escaping (Symbol) -> Void) -> any View
@@ -160,13 +161,13 @@ extension IndexPath  {
 }
 
 
-extension LineEditorView {
+extension GenericLineEditorView {
         
     // MARK: - UITableViewCell
     public class Line : UITableViewCell {
 
         let lineNumber = UILabel()
-        let textFieldController = LineEditorTextControlVC()
+        let textFieldController = TextEditor()
         
         
         private var tableView:UITableView {
@@ -188,12 +189,6 @@ extension LineEditorView {
             
             setupContraints()
             
-            let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
-
-            textFieldController.patterns =  [
-                SyntaxtTextToken( pattern: line_begin_keywords,
-                                  tokenFactory: {  UITagView() } )
-            ]
         }
         
         required init?(coder: NSCoder) {
@@ -231,7 +226,7 @@ extension LineEditorView {
         
         
         func update( at indexPath: IndexPath,
-                     coordinator: LineEditorView.Coordinator ) {
+                     coordinator: GenericLineEditorView.Coordinator ) {
             
             
             lineNumber.text             = "\(indexPath.row)"
@@ -317,17 +312,17 @@ extension LineEditorView {
         
         public override func viewDidLoad() {
             
-            tableView.register(LineEditorView.Line.self, forCellReuseIdentifier: "Cell")
+            tableView.register(GenericLineEditorView.Line.self, forCellReuseIdentifier: "Cell")
             tableView.separatorStyle = .none
 //            tableView.backgroundColor = UIColor.gray
             isEditing = false
         }
                 
-        func findTextFieldFirstResponder() -> LineEditorTextControlVC? {
+        func findTextFieldFirstResponder() -> TextEditor? {
             
             return tableView.visibleCells
                 .compactMap { cell in
-                    guard let cell = cell as? LineEditorView.Line else { return nil }
+                    guard let cell = cell as? GenericLineEditorView.Line else { return nil }
                     return cell.textFieldController
                 }
                 .first { textField in
@@ -345,7 +340,7 @@ extension LineEditorView {
         
         private func becomeTextFieldFirstResponder( at indexPath: IndexPath ) -> Bool {
             var done = false
-            if let cell = tableView.cellForRow(at: indexPath) as? LineEditorView.Line {
+            if let cell = tableView.cellForRow(at: indexPath) as? GenericLineEditorView.Line {
                 done  = cell.textFieldController.control.becomeFirstResponder()
             }
             return done
@@ -378,7 +373,7 @@ extension LineEditorView {
 }
 
 // MARK: - Coordinator
-extension LineEditorView {
+extension GenericLineEditorView {
     
     
     public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, LineEditorTextFieldDelegate  {
@@ -386,7 +381,7 @@ extension LineEditorView {
         private let ROW_HEIGHT = 30.0
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        private let owner: LineEditorView
+        private let owner: GenericLineEditorView
         
         var items: Array<Element> {
             owner.items
@@ -409,7 +404,7 @@ extension LineEditorView {
         #endif
 
         
-        init(owner: LineEditorView ) {
+        init(owner: GenericLineEditorView ) {
             self.owner = owner
             super.init()
             
@@ -431,7 +426,7 @@ extension LineEditorView {
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-            guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? LineEditorView.Line else {
+            guard let line = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as? GenericLineEditorView.Line else {
                 fatalError( "tableView.dequeueReusableCell returns NIL")
             }
             
@@ -511,7 +506,7 @@ extension LineEditorView {
         }
         
      
-        func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        public func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
             
             if let lines = textField.getAndResetPastingContent() {
 
@@ -535,21 +530,21 @@ extension LineEditorView {
             return  self.shouldChangeCharactersIn(textField, in: range, replacementString: string)
         }
         
-        func textFieldDidBeginEditing(_ textField: LineEditorTextField) {
+        public func textFieldDidBeginEditing(_ textField: LineEditorTextField) {
             guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
             linesController.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
-        func textFieldDidEndEditing(_ textField: LineEditorTextField, reason: UITextField.DidEndEditingReason) {
+        public func textFieldDidEndEditing(_ textField: LineEditorTextField, reason: UITextField.DidEndEditingReason) {
             guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return
             }
             linesController.tableView.deselectRow(at: indexPath, animated: false)
         }
         
-        func textFieldShouldReturn(_ textField: LineEditorTextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
+        public func textFieldShouldReturn(_ textField: LineEditorTextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
             guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
                 return false
             }
@@ -577,7 +572,7 @@ extension LineEditorView {
 
 
 // MARK: - Coordinator::Update Model
-extension LineEditorView.Coordinator  {
+extension GenericLineEditorView.Coordinator  {
     
     
     private func reloadVisibleRows( startingFrom indexPath: IndexPath  ) async {
@@ -703,7 +698,7 @@ extension LineEditorView.Coordinator  {
 }
 
 // MARK: - Coordinator::Keyboard
-extension LineEditorView.Coordinator {
+extension GenericLineEditorView.Coordinator {
     
     private var keyboardRectPublisher: AnyPublisher<CGRect, Never> {
         // 2.
@@ -724,7 +719,7 @@ extension LineEditorView.Coordinator {
                 
     }
     
-    func processSymbol(_ symbol: Symbol, on textField: LineEditorTextControlVC) {
+    func processSymbol(_ symbol: Symbol, on textField: TextEditor) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
         if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.control.selectedTextRange {
@@ -763,7 +758,7 @@ extension LineEditorView.Coordinator {
     }
     
     // creation Input View
-    private func makeCustomKeyboardView( for textField: LineEditorTextControlVC ) -> UIView  {
+    private func makeCustomKeyboardView( for textField: TextEditor ) -> UIView  {
         
         let keyboardView = owner.keyboardView(
             /*onHide:*/ toggleCustomKeyobard,
@@ -819,7 +814,7 @@ extension LineEditorView.Coordinator {
 
 
 // MARK: - Coordinator::UITextField
-extension LineEditorView.Coordinator  {
+extension GenericLineEditorView.Coordinator  {
     
 
     private func makeInputAccesoryView() -> UIView {
@@ -871,7 +866,7 @@ extension LineEditorView.Coordinator  {
 }
 
 // MARK: - Coordinator::ContextMenu
-extension LineEditorView.Coordinator  {
+extension GenericLineEditorView.Coordinator  {
     
     private func makeContextMenuView() -> UIView {
         
@@ -927,7 +922,11 @@ extension LineEditorView.Coordinator  {
 
 }
 
-struct LineEditorView_Previews: PreviewProvider {
+public typealias LineEditorView<Element: RawRepresentable<String>,
+                                Symbol: LineEditorKeyboardSymbol> = GenericLineEditorView<Element,Symbol,LineEditorTextFieldVC>
+
+
+struct GenericLineEditorView_Previews: PreviewProvider {
     
     struct KeyboardSymbol : LineEditorKeyboardSymbol {
         var value: String
@@ -956,16 +955,52 @@ struct LineEditorView_Previews: PreviewProvider {
         }
     }
     
+    class MyLineEditorTextFieldVC : LineEditorSyntaxTextFieldVC {
+        
+        let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
+
+        override func viewDidLoad() {
+            
+            self.patterns =  [
+                SyntaxtTextToken( pattern: line_begin_keywords,
+                                  tokenFactory: {  UITagView() } )
+            ]
+            
+            super.viewDidLoad()
+        }
+    }
+    
+    
     static var previews: some View {
-        LineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
-            Item(rawValue: "Item1"),
-            Item(rawValue: "Item2"),
-            Item(rawValue: "Item3"),
-            Item(rawValue: "Item4"),
-            Item(rawValue: "Item5"),
-            Item(rawValue: "Item6")
-        ] ), keyboardView: { onHide, onPressSymbol in
-            Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
-        })
+        
+        TabView {
+            
+            LineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
+                Item(rawValue: "Item1"),
+                Item(rawValue: "Item2"),
+                Item(rawValue: "Item3"),
+                Item(rawValue: "Item4"),
+                Item(rawValue: "Item5"),
+                Item(rawValue: "Item6")
+            ] ), keyboardView: { onHide, onPressSymbol in
+                Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
+            }).tabItem {
+                Label("Standard", systemImage: "")
+            }
+            
+            GenericLineEditorView<Item, KeyboardSymbol, MyLineEditorTextFieldVC>( items: Binding.constant( [
+                Item(rawValue: "Item1"),
+                Item(rawValue: "Item2"),
+                Item(rawValue: "Item3"),
+                Item(rawValue: "Item4"),
+                Item(rawValue: "Item5"),
+                Item(rawValue: "Item6")
+            ] ), keyboardView: { onHide, onPressSymbol in
+                Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
+            }).tabItem {
+                Label("Syntax", systemImage: "")
+            }
+
+        }
     }
 }

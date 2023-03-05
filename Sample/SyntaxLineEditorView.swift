@@ -1,20 +1,32 @@
 //
-//  ContentView.swift
-//  LineEditor
+//  SyntaxLineEditorView.swift
+//  LineEditorSample
 //
-//  Created by Bartolomeo Sorrentino on 17/10/22.
+//  Created by Bartolomeo Sorrentino on 05/03/23.
 //
 
 import SwiftUI
 import LineEditor
 
-class Model : ObservableObject {
+
+class CustomLineEditorTextFieldVC : LineEditorSyntaxTextFieldVC {
     
-    @Published var items = (0...50).map { Item( rawValue: "line\($0)" ) }
-//    @Published var items = (0...2).map { Item( rawValue: "line\($0)" ) }
+    static let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
+
+    static let tokens = [
+        SyntaxtTextToken( pattern: line_begin_keywords,
+                          tokenFactory: {  UITagView() } )
+    ]
+    
+    override func viewDidLoad() {
+        
+        self.patterns = Self.tokens
+        
+        super.viewDidLoad()
+    }
 }
 
-struct ContentView: View {
+struct SyntaxLineEditorView : View {
     
     @State private var selectedTab = "Key2"
     
@@ -29,7 +41,7 @@ struct ContentView: View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<Item, KeyboardSymbol>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
+            GenericLineEditorView<Item, KeyboardSymbol, CustomLineEditorTextFieldVC>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
                 onHide, onPressSymbol in
                 SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
                     .environment(\.keyboardSelectedTab, $selectedTab)
@@ -83,8 +95,8 @@ struct ContentView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
+struct SyntaxLineEditorView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        SyntaxLineEditorView()
     }
 }

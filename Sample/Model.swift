@@ -22,3 +22,11 @@ extension String.StringInterpolation {
         appendInterpolation(item.rawValue)
     }
 }
+
+class Model : ObservableObject {
+    
+    @Published var items = (0...50).map { Item( rawValue: "line\($0)" ) }
+//    @Published var items = (0...2).map { Item( rawValue: "line\($0)" ) }
+}
+
+

@@ -16,11 +16,16 @@ struct LineEditorApp: App {
         WindowGroup {
             TabView {
                
-                ContentView()
+                StandardLineEditorView()
                     .tabItem {
-                        Label("LineEditorView", image: "")
+                        Label("Standard Line Editor", image: "")
                     }
-                
+
+                SyntaxLineEditorView()
+                    .tabItem {
+                        Label("Syntax Line Editor", image: "")
+                    }
+
                 VStack {
                     Spacer( minLength: 200)
                     SyntaxTextField( text: "participant participant xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx",

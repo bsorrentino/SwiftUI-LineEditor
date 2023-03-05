@@ -213,12 +213,7 @@ class SyntaxTextModel : ObservableObject {
 
 public class UISyntaxTextView: UIView {
     
-    private var model  = SyntaxTextModel()
-    
-    var patterns:Array<SyntaxtTextToken>? {
-        get { model.patterns }
-        set { model.patterns = newValue }
-    }
+    private(set) var model  = SyntaxTextModel()
     
     var font: UIFont? {
         
@@ -499,17 +494,17 @@ extension UISyntaxTextView: UITextFieldDelegate {
 }
 
 
-public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField {
+open class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField {
     
     private let scrollView = UIScrollView()
     private let contentView = UISyntaxTextView()
     
     public var patterns:Array<SyntaxtTextToken>? {
-        get { contentView.patterns }
-        set { contentView.patterns = newValue }
+        get { contentView.model.patterns }
+        set { contentView.model.patterns = newValue }
     }
     
-    var owningCell: UITableViewCell? {
+    public var owningCell: UITableViewCell? {
         guard let contentView = view.superview, let cell = contentView.superview as? UITableViewCell else {
             return nil
         }
@@ -517,11 +512,11 @@ public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField 
 
     }
     
-    var isPastingContent: Bool = false
+    public var isPastingContent: Bool = false
     
-    var delegate: LineEditorTextFieldDelegate?
+    public var delegate: LineEditorTextFieldDelegate?
     
-    var control: UIControl & UITextInput {
+    public var control: UIControl & UITextInput {
         guard let result = contentView.candidateEditingTextField else {
             fatalError("there is no candidateEditingTextField available")
         }
@@ -550,7 +545,7 @@ public class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField 
         }
     }
     
-    override public func viewDidLoad() {
+    override open func viewDidLoad() {
         super.viewDidLoad()
         setupScrollView()
         setupContentView()
