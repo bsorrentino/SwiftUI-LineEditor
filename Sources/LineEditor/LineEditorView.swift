@@ -24,11 +24,11 @@ public protocol LineEditorTextField : UIViewController, UIResponderStandardEditA
 
     var text:String? { get set }
 
+    var font: UIFont? { get set }
+    
     init()
     
     func getAndResetPastingContent() -> [String]?
-
-    func updateFont( _ newFont: UIFont )
 
     func indexPath( for tableView: UITableView ) -> IndexPath?
 
@@ -248,7 +248,7 @@ extension LineEditorView {
                 textFieldController.inputAccessoryView = coordinator.inputAccessoryView
             }
 
-            textFieldController.updateFont(coordinator.linesController.font)
+            textFieldController.font = coordinator.linesController.font
             textFieldController.text = coordinator.items[ indexPath.row ].rawValue
 
         }

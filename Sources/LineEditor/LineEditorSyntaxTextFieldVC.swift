@@ -23,6 +23,7 @@ private extension String {
 }
 
 public protocol SyntaxTextView : UIView {
+    var font:UIFont? { get set }
     var text:String? { get set }
     var onDelete:(() -> Void)? { get set }
 }
@@ -218,6 +219,9 @@ public class UISyntaxTextView: UIView {
     var font: UIFont? {
         
         didSet {
+            if( oldValue?.pointSize == font?.pointSize ) {
+                return
+            }
             subviews.compactMap( { $0 as? UITextField } )
                     .forEach({ $0.font = font })
         }
@@ -290,6 +294,7 @@ public class UISyntaxTextView: UIView {
         subview.layer.borderWidth = 2
         subview.layer.cornerRadius = 12
         subview.text = token
+        subview.font = font
         subview.onDelete = { [weak self] in
             self?.model.removeElement(at: index)
             self?.reload(startingAt: 0 )
@@ -369,7 +374,7 @@ public class UISyntaxTextView: UIView {
                 let subview = tokenViewFactory() as! SyntaxTextView
                 
                 initTokenView( subview, token: token, withIndex: index )
-                                
+                 
                 self.addSubview(subview)
                 
             }
@@ -539,10 +544,9 @@ open class LineEditorSyntaxTextFieldVC: UIViewController, LineEditorTextField {
         set { contentView.text = newValue }
     }
     
-    public func updateFont(_ newFont: UIFont) {
-        if contentView.font == nil || (contentView.font != nil &&  newFont.pointSize != contentView.font!.pointSize) {
-            contentView.font = newFont
-        }
+    public var font: UIFont? {
+        get { contentView.font }
+        set { contentView.font = newValue }
     }
     
     override open func viewDidLoad() {

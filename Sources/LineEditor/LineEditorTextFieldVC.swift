@@ -41,6 +41,11 @@ public class LineEditorTextFieldVC : UIViewController, LineEditorTextField {
         set { textField.text = newValue }
     }
     
+    public var font:UIFont? {
+        get { textField.font }
+        set { textField.font = newValue }
+    }
+
     public override func loadView() {
         self.view = textField
     }
@@ -58,14 +63,6 @@ public class LineEditorTextFieldVC : UIViewController, LineEditorTextField {
     open override func paste(_ sender: Any?) {
         isPastingContent = true
         super.paste(sender)
-    }
-
-    public func updateFont( _ newFont: UIFont ) {
-        
-        if textField.font == nil || (textField.font != nil &&  newFont.pointSize != textField.font!.pointSize) {
-            textField.font = newFont
-        }
-        
     }
 
 }

@@ -11,20 +11,15 @@ import UIKit
 public class UITagView: UIStackView, SyntaxTextView {
 
     public var padding = UIEdgeInsets(top: 2, left: 10, bottom: 2, right: 5)
-    public var font = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
+    public var font:UIFont? // = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
     public var onDelete:(() -> Void)?
     
     private var label = UILabel()
     private var button = UIButton()
     
     public var text:String? {
-        get {
-            label.text
-        }
-        set {
-            label.text = newValue
-        }
-        
+        get { label.text }
+        set { label.text = newValue }
     }
     
     public init( ) {
@@ -78,7 +73,7 @@ public class UITagView: UIStackView, SyntaxTextView {
         return size
 
     }
-
+    
     override public func sizeToFit() {
 //            button.sizeToFit()
 
