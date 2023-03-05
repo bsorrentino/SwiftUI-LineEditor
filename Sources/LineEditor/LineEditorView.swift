@@ -378,7 +378,7 @@ extension LineEditorView {
     
     public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, LineEditorTextFieldDelegate  {
         
-        private let ROW_HEIGHT = 30.0
+        private let ROW_HEIGHT = CGFloat(30.0)
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
         private let owner: LineEditorView
@@ -475,7 +475,9 @@ extension LineEditorView {
         
         
         public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            
             ROW_HEIGHT
+            
         }
      
         // MARK: - UITextFieldDelegate
