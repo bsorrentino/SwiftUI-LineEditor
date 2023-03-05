@@ -10,8 +10,11 @@ import UIKit
 
 public class UITagView: UIStackView, SyntaxTextView {
 
-    public var padding = UIEdgeInsets(top: 2, left: 10, bottom: 2, right: 5)
-    public var font:UIFont? // = UIFont.monospacedDigitSystemFont(ofSize: 20, weight: .regular)
+    public var padding = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 5)
+    public var font:UIFont? {
+        get { label.font }
+        set { label.font = newValue }
+    }
     public var onDelete:(() -> Void)?
     
     private var label = UILabel()
@@ -24,6 +27,7 @@ public class UITagView: UIStackView, SyntaxTextView {
     
     public init( ) {
         super.init( frame: .zero )
+        
         self.isUserInteractionEnabled = false
         self.distribution = .fillProportionally
         self.alignment = .center
@@ -32,6 +36,10 @@ public class UITagView: UIStackView, SyntaxTextView {
         self.spacing = 0
         self.isUserInteractionEnabled = true
 
+        self.layer.borderColor = UIColor.blue.cgColor
+        self.layer.borderWidth = 1
+        self.layer.cornerRadius = 12
+        
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = font
 
@@ -69,7 +77,6 @@ public class UITagView: UIStackView, SyntaxTextView {
         size.height += max( button.intrinsicContentSize.height, label.intrinsicContentSize.height )
         size.height += padding.bottom
 
-
         return size
 
     }
@@ -94,6 +101,8 @@ public class UITagView: UIStackView, SyntaxTextView {
 //            size.width += self.spacing
 
         self.frame.size = self.intrinsicContentSize
+    
+
     }
 
 }
