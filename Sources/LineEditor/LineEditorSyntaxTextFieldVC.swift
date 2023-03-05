@@ -227,7 +227,7 @@ public class UISyntaxTextView: UIView {
         }
     }
     
-    var padding:UIEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: 0)
+    var padding:UIEdgeInsets = UIEdgeInsets(top: 2, left: 5, bottom: 2, right: 0)
     
     public var text: String?  = "" {
         didSet {
@@ -290,9 +290,6 @@ public class UISyntaxTextView: UIView {
     private func initTokenView<TokenView : UIView>( _ subview: TokenView,  token: String, withIndex index: Int ) where TokenView : SyntaxTextView
     {
         subview.tag = index
-        subview.layer.borderColor = UIColor.blue.cgColor
-        subview.layer.borderWidth = 2
-        subview.layer.cornerRadius = 12
         subview.text = token
         subview.font = font
         subview.onDelete = { [weak self] in
@@ -300,6 +297,7 @@ public class UISyntaxTextView: UIView {
             self?.reload(startingAt: 0 )
         }
         subview.sizeToFit()
+        
     }
 
     private func initTextField( text: String?, withIndex index: Int ) -> UITextField {
@@ -324,7 +322,7 @@ public class UISyntaxTextView: UIView {
         
         let _ = subviews.reduce( initValue ) { partialResult, view in
 
-            view.frame.size.height = self.frame.size.height
+            view.frame.size.height = self.frame.size.height - padding.top - padding.bottom
 
             if let prev = partialResult {
                 let width = padding.left + prev.frame.size.width + padding.right
