@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  LineEditorSyntaxTextFieldVC.swift
 //  
 //
 //  Created by Bartolomeo Sorrentino on 26/02/23.
@@ -19,6 +19,18 @@ private extension String {
                                               attributes: [.font: font],
                                               context: nil)
         return boundingRect.size
+    }
+    
+}
+
+// [How to trim a string in Swift](https://thisdevbrain.com/how-to-trim-a-string-in-swift/)
+extension String {
+    func trimingLeadingSpaces(using characterSet: CharacterSet = .whitespacesAndNewlines) -> String {
+        guard let index = firstIndex(where: { !CharacterSet(charactersIn: String($0)).isSubset(of: characterSet) }) else {
+            return self
+        }
+
+        return String(self[index...])
     }
 }
 
@@ -453,12 +465,32 @@ extension UISyntaxTextView: UITextFieldDelegate {
 
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
                 
-        print( Self.self, #function )
+        print( Self.self, #function, range, "string.isEmpty=\(string.isEmpty)" )
         
         guard let previousText = textField.text, let rangeInText = Range(range, in: previousText) else {
+            
+            print( Self.self, #function, "skip" )
             return true
         }
+
+        // [Detect backspace Event in UITextField](https://stackoverflow.com/a/49652026/521197)
+        let _detectBackspaceOnRange = { string.isEmpty && range.length > 1 }
+        
+        let _focusOnNextField = { [unowned self] ( startingFromIndex: Int ) in
             
+            if let nextTextField = self.findFirstTextField( from: startingFromIndex ){
+            
+                nextTextField.becomeFirstResponder()
+                
+                // [getting and setting the cursor position](https://www.programming-books.io/essential/ios/getting-and-setting-the-cursor-position-7729477acddf4aaa8539261a52c5d5ff#2fbd8912-9cba-4666-b1a2-6422911ebd86)
+                let cursor_position = nextTextField.beginningOfDocument
+                
+                nextTextField.selectedTextRange = nextTextField.textRange( from: cursor_position, to: cursor_position )
+                
+            }
+
+        }
+
         let updatedText = previousText.replacingCharacters(in: rangeInText, with: string)
             
         let index = textField.tag
@@ -466,26 +498,23 @@ extension UISyntaxTextView: UITextFieldDelegate {
         model.setText( updatedText, at: index)
 
         let text = model.text
+
+        print( Self.self, #function, updatedText, index   )
         
-        print( Self.self, #function, updatedText  )
-        
-        if let _ =  string.rangeOfCharacter(from: CharacterSet.whitespaces) {
+        if _detectBackspaceOnRange() {
+            
+            internalInit( from: text.trimingLeadingSpaces(), startingAt: index )
+            
+            _focusOnNextField( index )
+        }
+        else if string.rangeOfCharacter(from: CharacterSet.whitespaces) != nil {
 
             if model.match( updatedText ) {
 
                 internalInit( from: text, startingAt: index)
                 
-                if let nextTextField = findFirstTextField(from: index+1 ){
+                _focusOnNextField( index + 1 )
                 
-                    nextTextField.becomeFirstResponder()
-                    
-                    // [getting and setting the cursor position](https://www.programming-books.io/essential/ios/getting-and-setting-the-cursor-position-7729477acddf4aaa8539261a52c5d5ff#2fbd8912-9cba-4666-b1a2-6422911ebd86)
-
-                    let cursor_position = nextTextField.beginningOfDocument
-                    nextTextField.selectedTextRange = nextTextField.textRange( from: cursor_position, to: cursor_position)
-                    
-                }
-
             }
             
         }
