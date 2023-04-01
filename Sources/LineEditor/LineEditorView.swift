@@ -79,8 +79,7 @@ public protocol LineEditorKeyboardSymbol : Identifiable<String> {
     var additionalValues: [String]? {get}
 }
 
-public struct LineEditorView<Element: RawRepresentable<String>,
-                             Symbol: LineEditorKeyboardSymbol,
+public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
                              TextEditor: LineEditorTextField> : UIViewControllerRepresentable {
    
     public typealias KeyboardContent = (_ onHide: @escaping () -> Void,
@@ -90,22 +89,25 @@ public struct LineEditorView<Element: RawRepresentable<String>,
     
     public typealias UIViewControllerType = Lines
     
-    @Binding private var items:Array<Element>
+    private var items:Array<String>
+    @Binding private var text:String
     @Binding private var fontSize:CGFloat
     @Binding private var showLine:Bool
 
     private var keyboardView: KeyboardContent
     
-    public init( items: Binding<Array<Element>>, fontSize:Binding<CGFloat>, showLine:Binding<Bool>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
+    public init( text: Binding<String>, fontSize:Binding<CGFloat>, showLine:Binding<Bool>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
         
-        self._items     = items
+        self._text     = text
         self._fontSize  = fontSize
         self._showLine  = showLine
         self.keyboardView = keyboardView
+        
+        self.items = text.wrappedValue.split(whereSeparator: \.isNewline).map { String($0) }
     }
 
-    public init( items: Binding<Array<Element>>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
-        self.init( items:items, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false), keyboardView: keyboardView )
+    public init( text: Binding<String>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
+        self.init( text:text, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false), keyboardView: keyboardView )
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -249,7 +251,7 @@ extension LineEditorView {
             }
 
             textFieldController.font = coordinator.linesController.font
-            textFieldController.text = coordinator.items[ indexPath.row ].rawValue
+            textFieldController.text = coordinator.items[ indexPath.row ]
 
         }
 
@@ -381,9 +383,9 @@ extension LineEditorView {
         private let ROW_HEIGHT = CGFloat(30.0)
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        private let owner: LineEditorView
+        private var owner: LineEditorView
         
-        var items: Array<Element> {
+        var items: Array<String> {
             owner.items
         }
         
@@ -498,9 +500,9 @@ extension LineEditorView {
                 
                 let updatedText = previousText.replacingCharacters(in: rangeInText, with: input)
                 
-                if let item = Element( rawValue: updatedText ) {
-                    owner.items[ indexPath.row ] = item
-                }
+                let item = updatedText
+                owner.items[ indexPath.row ] = item
+                
             }
 
             return true
@@ -517,7 +519,7 @@ extension LineEditorView {
                 if lines.count > 1,  let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: owner.items ) {
                     
                     let elements = lines.enumerated().compactMap { (index, value) in
-                        ( index == 0 ) ? nil : Element(rawValue: value)
+                        ( index == 0 ) ? nil : value
                     }
                     
                     Task {
@@ -559,14 +561,11 @@ extension LineEditorView {
 //            }
 
             // Add item below
-            if let newItem = Element(rawValue: "") {
-                Task {
-                    await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath )
-                }
-                return true
+            let newItem = ""
+            Task {
+                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath )
             }
-            
-            return false
+            return true
         }
     }
     
@@ -614,27 +613,25 @@ extension LineEditorView.Coordinator  {
     }
     
     func updateItem( at index: Int, withText text: String ) {
-        if let item = Element(rawValue: text ) {
-            owner.items[ index ] = item
-        }
-
+        let item = text
+        owner.items[ index ] = item
     }
         
     func addItemAbove( in tableView: UITableView, atRow indexPath: IndexPath) async {
 
-        if let newItem = Element(rawValue: "") {
+        let newItem = ""
 
-            owner.items.insert( newItem, at: indexPath.row )
-            await MainActor.run {
-                tableView.insertRows(at: [indexPath], with: .automatic )
-            }
-            await self.reloadVisibleRows(startingFrom: indexPath)
-            
-            self.linesController.becomeTextFieldFirstResponder(at: indexPath, withRetries: 0)
+        owner.items.insert( newItem, at: indexPath.row )
+        await MainActor.run {
+            tableView.insertRows(at: [indexPath], with: .automatic )
         }
+        await self.reloadVisibleRows(startingFrom: indexPath)
+        
+        self.linesController.becomeTextFieldFirstResponder(at: indexPath, withRetries: 0)
+        
     }
 
-    func addItemsBelow( _ items: [Element], in tableView: UITableView, atRow indexPath: IndexPath ) async  {
+    func addItemsBelow( _ items: [String], in tableView: UITableView, atRow indexPath: IndexPath ) async  {
         
         let indexes = items
             .enumerated()
@@ -654,7 +651,7 @@ extension LineEditorView.Coordinator  {
 
     }
     
-    private func addItemBelow( _ newItem: Element, in tableView: UITableView, atRow indexPath: IndexPath ) async {
+    private func addItemBelow( _ newItem: String, in tableView: UITableView, atRow indexPath: IndexPath ) async {
         
         let newIndexPath = indexPath.add( row: 1 )
 
@@ -678,10 +675,10 @@ extension LineEditorView.Coordinator  {
         
         if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
-            if let newItem = Element(rawValue: "" ) {
+            let newItem = ""
                 
-                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
-            }
+            await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
+            
         }
     }
     
@@ -690,10 +687,10 @@ extension LineEditorView.Coordinator  {
         
         if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
-            if let newItem = Element(rawValue: owner.items[ indexPath.row ].rawValue  ) {
+            let newItem = owner.items[ indexPath.row ]
                 
-                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
-            }
+            await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
+            
         }
     }
 
@@ -737,7 +734,7 @@ extension LineEditorView.Coordinator {
                 if let values = symbol.additionalValues {
                     
                     Task {
-                        await addItemsBelow(values.compactMap { Element( rawValue: $0) }, in: linesController.tableView, atRow: indexPath)
+                        await addItemsBelow(values.compactMap { $0 }, in: linesController.tableView, atRow: indexPath)
                     }
                 }
                 // toggleCustomKeyobard()
@@ -924,8 +921,7 @@ extension LineEditorView.Coordinator  {
 
 }
 
-public typealias StandardLineEditorView<Element: RawRepresentable<String>,
-                                Symbol: LineEditorKeyboardSymbol> = LineEditorView<Element,Symbol,LineEditorTextFieldVC>
+public typealias StandardLineEditorView<Symbol: LineEditorKeyboardSymbol> = LineEditorView<Symbol,LineEditorTextFieldVC>
 
 
 struct GenericLineEditorView_Previews: PreviewProvider {
@@ -978,25 +974,29 @@ struct GenericLineEditorView_Previews: PreviewProvider {
         
         Group {
             
-            StandardLineEditorView<Item, KeyboardSymbol>( items: Binding.constant( [
-                Item(rawValue: "Item1"),
-                Item(rawValue: "Item2"),
-                Item(rawValue: "Item3"),
-                Item(rawValue: "Item4"),
-                Item(rawValue: "Item5"),
-                Item(rawValue: "Item6")
-            ] ), keyboardView: { onHide, onPressSymbol in
+            StandardLineEditorView<KeyboardSymbol>( text: Binding.constant(
+                """
+                Item1
+                Item2
+                Item3
+                Item4
+                Item5
+                Item6
+                """
+            ), keyboardView: { onHide, onPressSymbol in
                 Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
             })
             
-            LineEditorView<Item, KeyboardSymbol, MyLineEditorTextFieldVC>( items: Binding.constant( [
-                Item(rawValue: "Item1"),
-                Item(rawValue: "Item2"),
-                Item(rawValue: "Item3"),
-                Item(rawValue: "Item4"),
-                Item(rawValue: "Item5"),
-                Item(rawValue: "Item6")
-            ] ), keyboardView: { onHide, onPressSymbol in
+            LineEditorView<KeyboardSymbol, MyLineEditorTextFieldVC>( text: Binding.constant(
+                """
+                Item1
+                Item2
+                Item3
+                Item4
+                Item5
+                Item6
+                """
+            ), keyboardView: { onHide, onPressSymbol in
                 Keyboard( onHide: onHide, onPressSymbol: onPressSymbol )
             })
 
