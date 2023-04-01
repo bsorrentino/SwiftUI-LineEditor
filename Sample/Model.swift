@@ -25,8 +25,7 @@ extension String.StringInterpolation {
 
 class Model : ObservableObject {
     
-    @Published var items = (0...50).map { Item( rawValue: "line\($0)" ) }
-//    @Published var items = (0...2).map { Item( rawValue: "line\($0)" ) }
+    @Published var text = (0...50).map { "line\($0)" }.joined(separator: "\n")
 }
 
 
