@@ -48,9 +48,8 @@ struct StandardEditorView : View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onChange(of: model.text ) {newValue in
-            
-            print( "model.text: \(newValue)")
-                        
+            print( "update")
+            // print( "model.text: \(newValue)")
         }
         
     }
