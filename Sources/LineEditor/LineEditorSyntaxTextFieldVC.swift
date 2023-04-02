@@ -223,7 +223,11 @@ class SyntaxTextModel : ObservableObject {
     }
 }
 
-
+public protocol UITextFieldChanged : NSObjectProtocol {
+    
+    func editingChanged(_ textField: UITextField) -> Void
+}
+    
 public class UISyntaxTextView: UIView {
     
     private(set) var model  = SyntaxTextModel()
@@ -258,7 +262,7 @@ public class UISyntaxTextView: UIView {
         return textFields.first
     }
     
-    var delegate:UITextFieldDelegate?
+    var delegate:(UITextFieldDelegate & UITextFieldChanged)?
 
     private weak var internalInputView:UIView?
     
@@ -314,17 +318,18 @@ public class UISyntaxTextView: UIView {
 
     private func initTextField( text: String?, withIndex index: Int ) -> UITextField {
         
-        let subview = UITextField()
-        subview.tag = index
-        subview.delegate = self
-        subview.font = font
+        let textField = UITextField()
+        textField.tag = index
+        textField.delegate = self
+        textField.font = font
 //        subview.layer.borderColor = UIColor.black.cgColor
 //        subview.layer.borderWidth = 2
-        subview.text = text
-        subview.inputView = self.inputView
-        subview.inputAccessoryView = self.inputAccessoryView
+        textField.text = text
+        textField.inputView = self.inputView
+        textField.inputAccessoryView = self.inputAccessoryView
         
-        return subview
+        textField.addTarget(self, action: #selector(self.editingChanged), for: .editingChanged)
+        return textField
         
     }
 
@@ -470,7 +475,7 @@ extension UISyntaxTextView: UITextFieldDelegate {
         guard let previousText = textField.text, let rangeInText = Range(range, in: previousText) else {
             
             print( Self.self, #function, "skip" )
-            return true
+            return false
         }
 
         // [Detect backspace Event in UITextField](https://stackoverflow.com/a/49652026/521197)
@@ -519,10 +524,13 @@ extension UISyntaxTextView: UITextFieldDelegate {
             
         }
 
-        let _ = delegate?.textField?(textField, shouldChangeCharactersIn: range, replacementString: string ) ?? true
-        
-        return true
+        return delegate?.textField?(textField, shouldChangeCharactersIn: range, replacementString: string ) ?? true
     }
+    
+    @objc private func editingChanged(_ textField: UITextField) {
+        delegate?.editingChanged(textField)
+    }
+
 }
 
 
@@ -640,7 +648,8 @@ extension LineEditorSyntaxTextFieldVC: UIScrollViewDelegate {
 }
 
 // MARK: - UITextFieldDelegate
-extension LineEditorSyntaxTextFieldVC : UITextFieldDelegate {
+extension LineEditorSyntaxTextFieldVC : UITextFieldDelegate, UITextFieldChanged {
+    
     
     public func textFieldDidBeginEditing(_ textField: UITextField) {
         isPastingContent = false
@@ -669,6 +678,12 @@ extension LineEditorSyntaxTextFieldVC : UITextFieldDelegate {
         
         return delegate.textFieldShouldReturn(self)
         
+    }
+    
+    public func editingChanged(_ textField: UITextField) {
+        guard let delegate else { return }
+        
+        return delegate.editingChanged(self)
     }
 
 }

@@ -60,6 +60,7 @@ public extension LineEditorTextField {
 
 }
 
+// [Differentiate UITextField delegate and .editingChange usage](https://levelup.gitconnected.com/differentiate-uitextfield-delegate-and-editingchange-usage-c7abe7439faa)
 @MainActor public protocol LineEditorTextFieldDelegate : NSObjectProtocol {
     
     func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool
@@ -70,6 +71,7 @@ public extension LineEditorTextField {
     
     func textFieldShouldReturn(_ textField: LineEditorTextField) -> Bool
     
+    func editingChanged(_ textField: LineEditorTextField) -> Void
 }
 
 public protocol LineEditorKeyboardSymbol : Identifiable<String> {
@@ -78,6 +80,33 @@ public protocol LineEditorKeyboardSymbol : Identifiable<String> {
     
     var additionalValues: [String]? {get}
 }
+
+
+class Items : ObservableObject {
+    
+    @Published var value:Array<String>
+    
+    private var cancellable: AnyCancellable?
+   
+    init( from text: Binding<String>, updateDebounce: TimeInterval ) {
+        
+        self.value = text.wrappedValue.split(whereSeparator: \.isNewline).map { String($0) }
+        
+        cancellable = self.$value
+            .receive(on: DispatchQueue.main)
+            .debounce(for: RunLoop.SchedulerTimeType.Stride(updateDebounce), scheduler: RunLoop.main )
+            .sink { items in
+                print( "updated!" )
+                text.wrappedValue = items.joined( separator: "\n" )
+            }
+    }
+
+    convenience init( from text: Binding<String> ) {
+        self.init( from: text, updateDebounce: 0.75)
+    }
+    
+}
+
 
 public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
                              TextEditor: LineEditorTextField> : UIViewControllerRepresentable {
@@ -89,25 +118,35 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
     
     public typealias UIViewControllerType = Lines
     
-    private var items:Array<String>
+    @StateObject private var items:Items
     @Binding private var text:String
     @Binding private var fontSize:CGFloat
     @Binding private var showLine:Bool
 
     private var keyboardView: KeyboardContent
     
-    public init( text: Binding<String>, fontSize:Binding<CGFloat>, showLine:Binding<Bool>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
+    public init( text: Binding<String>,
+                 fontSize:Binding<CGFloat>,
+                 showLine:Binding<Bool>,
+                 updateDebounce: TimeInterval = 0.75,
+                 @ViewBuilder keyboardView: @escaping KeyboardContent )
+    {
         
         self._text     = text
+        // [How to initialize a view with a stateobject as a parameter](https://stackoverflow.com/a/64938575/521197)
+        self._items = StateObject(wrappedValue: Items( from: text, updateDebounce: updateDebounce ))
         self._fontSize  = fontSize
         self._showLine  = showLine
         self.keyboardView = keyboardView
         
-        self.items = text.wrappedValue.split(whereSeparator: \.isNewline).map { String($0) }
+        
     }
 
     public init( text: Binding<String>, @ViewBuilder keyboardView: @escaping KeyboardContent ) {
-        self.init( text:text, fontSize: Binding.constant(CGFloat(15.0)), showLine: Binding.constant(false), keyboardView: keyboardView )
+        self.init( text: text,
+                   fontSize: Binding.constant(CGFloat(15.0)),
+                   showLine: Binding.constant(false),
+                   keyboardView: keyboardView )
     }
     
     public func makeCoordinator() -> Coordinator {
@@ -251,7 +290,7 @@ extension LineEditorView {
             }
 
             textFieldController.font = coordinator.linesController.font
-            textFieldController.text = coordinator.items[ indexPath.row ]
+            textFieldController.text = coordinator.owner.items.value[ indexPath.row ]
 
         }
 
@@ -383,11 +422,7 @@ extension LineEditorView {
         private let ROW_HEIGHT = CGFloat(30.0)
         private let CUSTOM_KEYBOARD_MIN_HEIGHT = 402.0
 
-        private var owner: LineEditorView
-        
-        var items: Array<String> {
-            owner.items
-        }
+        private(set) var owner: LineEditorView
         
         let linesController = Lines()
                 
@@ -418,12 +453,14 @@ extension LineEditorView {
                 self?.keyboardRect = rect
             }
 
+//            textField.addTarget(self, action: #selector(self.editingChanged), for: .editingChanged)
+
         }
         
         // MARK: - UITableViewDataSource
         
         public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            owner.items.count
+            owner.items.value.count
         }
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -443,7 +480,7 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-            return indexPath.isValid(in: owner.items)
+            return indexPath.isValid(in: owner.items.value)
         }
         
         
@@ -464,7 +501,7 @@ extension LineEditorView {
         }
         
         public func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-            return indexPath.isValid(in: owner.items)
+            return indexPath.isValid(in: owner.items.value)
         }
         
         public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
@@ -482,41 +519,43 @@ extension LineEditorView {
             
         }
      
-        // MARK: - UITextFieldDelegate
+        // MARK: - LineEditorTextFieldDelegate
         
-        internal func shouldChangeCharactersIn(_ textField: LineEditorTextField, in range: NSRange, replacementString input: String) -> Bool {
+        public func editingChanged(_ textField: LineEditorTextField) {
+            
+            guard let text = textField.text,
+                  let indexPath = textField.indexPath(for: linesController.tableView)?.testValid( in: owner.items.value ) else {
+                return
+            }
+
+            owner.items.value[ indexPath.row ] = text
+        }
+     
+        internal func _shouldChangeCharactersIn(_ textField: LineEditorTextField, in range: NSRange, replacementString string: String) -> Bool {
             
             // skip newline
             // https://stackoverflow.com/a/44939369/521197
-            guard input.rangeOfCharacter(from: CharacterSet.newlines) == nil else {
-                return false
-            }
-
-            guard let indexPath = textField.indexPath(for: linesController.tableView)?.testValid( in: owner.items ) else {
+            guard string.rangeOfCharacter(from: CharacterSet.newlines) == nil else {
                 return false
             }
             
-            if let previousText = textField.text, let rangeInText = Range(range, in: previousText) {
-                
-                let updatedText = previousText.replacingCharacters(in: rangeInText, with: input)
-                
-                let item = updatedText
-                owner.items[ indexPath.row ] = item
-                
-            }
+//            if let previousText = textField.text, let rangeInText = Range(range, in: previousText)  {
+//
+//                    let updatedText = previousText.replacingCharacters(in: rangeInText, with: string)
+//
+//                    return true
+//            }
 
             return true
-
         }
-        
-     
+
         public func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
             
             if let lines = textField.getAndResetPastingContent() {
 
-                let result = self.shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
+                let result = self._shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
 
-                if lines.count > 1,  let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: owner.items ) {
+                if lines.count > 1,  let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: owner.items.value ) {
                     
                     let elements = lines.enumerated().compactMap { (index, value) in
                         ( index == 0 ) ? nil : value
@@ -531,39 +570,38 @@ extension LineEditorView {
 
             }
             
-            return  self.shouldChangeCharactersIn(textField, in: range, replacementString: string)
+            return  self._shouldChangeCharactersIn(textField, in: range, replacementString: string)
         }
         
         public func textFieldDidBeginEditing(_ textField: LineEditorTextField) {
-            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items.value ) else {
                 return
             }
             linesController.tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
         
         public func textFieldDidEndEditing(_ textField: LineEditorTextField, reason: UITextField.DidEndEditingReason) {
-            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items.value ) else {
                 return
             }
             linesController.tableView.deselectRow(at: indexPath, animated: false)
         }
         
         public func textFieldShouldReturn(_ textField: LineEditorTextField) -> Bool  {// called when 'return' key pressed. return NO to ignore.
-            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ) else {
+            guard let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items.value ) else {
                 return false
             }
             
             // Move cursor to next line or adds item below if doesn't exist
-//            if let nextIndex = indexPath.add( row: 1 ).testValid(in: owner.items) {
+//            if let nextIndex = indexPath.add( row: 1 ).testValid(in: owner.items.value) {
 //
 //                linesController.becomeTextFieldFirstResponder(at: nextIndex, withRetries: 1)
 //                return true
 //            }
 
             // Add item below
-            let newItem = ""
             Task {
-                await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath )
+                await addItemBelow( "", in: linesController.tableView, atRow: indexPath )
             }
             return true
         }
@@ -577,7 +615,7 @@ extension LineEditorView.Coordinator  {
     
     
     private func reloadVisibleRows( startingFrom indexPath: IndexPath  ) async {
-        guard indexPath.isValid( in: owner.items ), let visibleRows = linesController.tableView.indexPathsForVisibleRows  else {
+        guard indexPath.isValid( in: owner.items.value ), let visibleRows = linesController.tableView.indexPathsForVisibleRows  else {
             return
         }
         
@@ -592,11 +630,11 @@ extension LineEditorView.Coordinator  {
 
     func moveItem( in tableView: UITableView, fromRow sourceIndexPath: IndexPath, toRow destinationIndexPath: IndexPath ) async {
         
-        if destinationIndexPath.isLast( in: owner.items ) {
-            owner.items.append( owner.items.remove(at: sourceIndexPath.row) )
+        if destinationIndexPath.isLast( in: owner.items.value ) {
+            owner.items.value.append( owner.items.value.remove(at: sourceIndexPath.row) )
         }
         else {
-            owner.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
+            owner.items.value.swapAt(sourceIndexPath.row, destinationIndexPath.row)
         }
         
         await reloadVisibleRows(startingFrom: min( sourceIndexPath, destinationIndexPath ) )
@@ -605,7 +643,7 @@ extension LineEditorView.Coordinator  {
 
     func deleteItem( in tableView: UITableView, atRow indexPath: IndexPath ) async {
 
-        owner.items.remove(at: indexPath.row)
+        owner.items.value.remove(at: indexPath.row)
         await MainActor.run {
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
@@ -614,14 +652,14 @@ extension LineEditorView.Coordinator  {
     
     func updateItem( at index: Int, withText text: String ) {
         let item = text
-        owner.items[ index ] = item
+        owner.items.value[ index ] = item
     }
         
     func addItemAbove( in tableView: UITableView, atRow indexPath: IndexPath) async {
 
         let newItem = ""
 
-        owner.items.insert( newItem, at: indexPath.row )
+        owner.items.value.insert( newItem, at: indexPath.row )
         await MainActor.run {
             tableView.insertRows(at: [indexPath], with: .automatic )
         }
@@ -637,7 +675,7 @@ extension LineEditorView.Coordinator  {
             .enumerated()
             .map { (index, item ) in
                 let i = IndexPath( row: indexPath.row + index + 1, section: indexPath.section)
-                owner.items.insert( item, at: i.row)
+                owner.items.value.insert( item, at: i.row)
                 return i
             }
 
@@ -655,11 +693,11 @@ extension LineEditorView.Coordinator  {
         
         let newIndexPath = indexPath.add( row: 1 )
 
-        if  newIndexPath.isEndIndex( in: owner.items ) {
-            owner.items.append( newItem)
+        if  newIndexPath.isEndIndex( in: owner.items.value ) {
+            owner.items.value.append( newItem)
         }
         else {
-            owner.items.insert( newItem, at: newIndexPath.row )
+            owner.items.value.insert( newItem, at: newIndexPath.row )
         }
     
         await MainActor.run {
@@ -687,7 +725,7 @@ extension LineEditorView.Coordinator  {
         
         if let indexPath = linesController.tableView.indexPathForSelectedRow {
             
-            let newItem = owner.items[ indexPath.row ]
+            let newItem = owner.items.value[ indexPath.row ]
                 
             await addItemBelow( newItem, in: linesController.tableView, atRow: indexPath)
             
@@ -721,7 +759,7 @@ extension LineEditorView.Coordinator {
     func processSymbol(_ symbol: Symbol, on textField: TextEditor) {
         
         // [How to programmatically enter text in UITextView at the current cursor position](https://stackoverflow.com/a/35888634/521197)
-        if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items ), let range = textField.control.selectedTextRange {
+        if let indexPath = textField.indexPath(for: linesController.tableView )?.testValid( in: owner.items.value ), let range = textField.control.selectedTextRange {
             // From your question I assume that you do not want to replace a selection, only insert some text where the cursor is.
             textField.control.replace(range, withText: symbol.value )
             if let text = textField.text {
@@ -775,8 +813,6 @@ extension LineEditorView.Coordinator {
     
     func toggleCustomKeyobard() {
         
-//        print( "toggleCustomKeyobard: \(self.showCustomKeyboard)" )
-        
         guard let textField = linesController.findTextFieldFirstResponder() else {
             return
         }
@@ -790,15 +826,6 @@ extension LineEditorView.Coordinator {
                 textField.control.reloadInputViews()
                 let _ = textField.control.becomeFirstResponder()
             }
-//            Task {
-//
-//                let duration = UInt64(0.5 * 1_000_000_000)
-//                try? await Task.sleep(nanoseconds: duration )
-//
-//                textField.reloadInputViews()
-//                let _ = textField.becomeFirstResponder()
-//
-//            }
         }
         else {
             textField.inputView = nil

@@ -41,12 +41,15 @@ struct SyntaxEditorView : View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<KeyboardSymbol, CustomLineEditorTextFieldVC>(text: $model.text, fontSize: $fontSize, showLine: $showLine) {
-                onHide, onPressSymbol in
+            LineEditorView<KeyboardSymbol, CustomLineEditorTextFieldVC>(text: $model.text,
+                                                                        fontSize: $fontSize,
+                                                                        showLine: $showLine,
+                                                                        keyboardView: { (onHide, onPressSymbol) in
+                
                 SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
                     .environment(\.keyboardSelectedTab, $selectedTab)
                     
-            }
+            })
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Line Editor")
             .toolbar {

@@ -23,12 +23,16 @@ struct StandardEditorView : View {
         //NavigationStack {
         NavigationView {
 
-            StandardLineEditorView<KeyboardSymbol>(text: $model.text, fontSize: $fontSize, showLine: $showLine) {
-                onHide, onPressSymbol in
-                SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
-                    .environment(\.keyboardSelectedTab, $selectedTab)
+            StandardLineEditorView<KeyboardSymbol>(text: $model.text,
+                                                   fontSize: $fontSize,
+                                                   showLine: $showLine,
+                                                   updateDebounce: 1.0,
+                                                   keyboardView: { (onHide, onPressSymbol) in
+                
+                    SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
+                        .environment(\.keyboardSelectedTab, $selectedTab)
                     
-            }
+            })
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Line Editor")
             .toolbar {
