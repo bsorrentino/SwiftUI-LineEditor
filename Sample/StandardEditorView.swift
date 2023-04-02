@@ -26,7 +26,6 @@ struct StandardEditorView : View {
             StandardLineEditorView<KeyboardSymbol>(text: $model.text,
                                                    fontSize: $fontSize,
                                                    showLine: $showLine,
-                                                   updateDebounce: 1.0,
                                                    keyboardView: { (onHide, onPressSymbol) in
                 
                     SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
