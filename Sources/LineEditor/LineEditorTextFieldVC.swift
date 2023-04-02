@@ -57,9 +57,11 @@ public class LineEditorTextFieldVC : UIViewController, LineEditorTextField {
         textField.keyboardType = .asciiCapable
         textField.autocapitalizationType = .none
         textField.returnKeyType = .done
+        
+        textField.addTarget(self, action: #selector(self.editingChanged), for: .editingChanged)
 
     }
-    
+
     open override func paste(_ sender: Any?) {
         isPastingContent = true
         super.paste(sender)
@@ -97,6 +99,12 @@ extension LineEditorTextFieldVC : UITextFieldDelegate {
         
         return delegate.textFieldShouldReturn(self)
         
+    }
+            
+    @objc private func editingChanged(_ textField: UITextField) {
+        guard let delegate else { return }
+        
+        return delegate.editingChanged(self)
     }
 
 }

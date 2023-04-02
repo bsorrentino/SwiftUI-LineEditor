@@ -23,12 +23,15 @@ struct StandardEditorView : View {
         //NavigationStack {
         NavigationView {
 
-            StandardLineEditorView<Item, KeyboardSymbol>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
-                onHide, onPressSymbol in
-                SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
-                    .environment(\.keyboardSelectedTab, $selectedTab)
+            StandardLineEditorView<KeyboardSymbol>(text: $model.text,
+                                                   fontSize: $fontSize,
+                                                   showLine: $showLine,
+                                                   keyboardView: { (onHide, onPressSymbol) in
+                
+                    SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
+                        .environment(\.keyboardSelectedTab, $selectedTab)
                     
-            }
+            })
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Line Editor")
             .toolbar {
@@ -44,15 +47,9 @@ struct StandardEditorView : View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .onChange(of: model.items ) {newValue in
-            
-//            print( "model.count: \(newValue.count)")
-            
-            newValue.enumerated().forEach { ( index, item ) in
-                print( "\(index)) \(item.rawValue)" )
-            }
-            
-            
+        .onChange(of: model.text ) {newValue in
+            print( "update")
+            // print( "model.text: \(newValue)")
         }
         
     }
