@@ -105,6 +105,9 @@ class Items : ObservableObject {
         self.init( from: text, updateDebounce: 0.75)
     }
     
+    func update( from text: String ) {
+        self.value = text.split(whereSeparator: \.isNewline).map { String($0) }
+    }
 }
 
 
@@ -150,7 +153,7 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
     }
     
     public func makeCoordinator() -> Coordinator {
-        Coordinator( owner: self)
+        Coordinator( owner: self )
     }
     
     public func makeUIViewController(context: Context) -> Lines {
@@ -160,6 +163,8 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
     }
     
     public func updateUIViewController(_ uiViewController: Lines, context: Context)  {
+        
+        items.update(from: text)
         
         Task {
             await uiViewController.updateState(fontSize: fontSize,
