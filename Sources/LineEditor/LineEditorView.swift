@@ -94,7 +94,8 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
     @Binding private var text:String
     @Binding private var fontSize:CGFloat
     @Binding private var showLine:Bool
-
+    @State var itemsUpdated = false
+    
     private var keyboardView: KeyboardContent
     
     public init( text: Binding<String>,
@@ -103,7 +104,7 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
                  @ViewBuilder keyboardView: @escaping KeyboardContent )
     {
         
-        self._text     = text
+        self._text = text
         // [How to initialize a view with a stateobject as a parameter](https://stackoverflow.com/a/64938575/521197)
         self._fontSize  = fontSize
         self._showLine  = showLine
@@ -125,17 +126,18 @@ public struct LineEditorView<Symbol: LineEditorKeyboardSymbol,
     public func makeUIViewController(context: Context) -> Lines {
         let uiViewController = context.coordinator.linesController
         
-        uiViewController.items = text.split(whereSeparator: \.isNewline).map { String($0) }
-        
         return uiViewController
     }
     
     public func updateUIViewController(_ uiViewController: Lines, context: Context)  {
         
         Task {
-            await uiViewController.updateState(fontSize: fontSize,
-                                               showLine: showLine,
-                                               isEditing: editMode?.wrappedValue.isEditing ?? false)
+            await uiViewController.updateState( text: $text,
+                                                itemsUpdated: itemsUpdated,
+                                                fontSize: fontSize,
+                                                showLine: showLine,
+                                                isEditing: editMode?.wrappedValue.isEditing ?? false)
+            itemsUpdated = false
         }
     }
 
@@ -268,8 +270,12 @@ extension LineEditorView {
     // MARK: - UITableViewController
     public class Lines : UITableViewController {
         
-        var items:Array<String>!
+        var items:Array<String> = []
+        private var text: String = ""
+        private let itemsWillChange = CurrentValueSubject<String, Never>("")
+        
         private var timerCancellable: Cancellable?
+        private var textCancellable: Cancellable?
         
         var fontSize:CGFloat = 15 {
             didSet {
@@ -283,9 +289,30 @@ extension LineEditorView {
 
         private(set) var font:UIFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
         
-        func updateState( fontSize:CGFloat, showLine:Bool, isEditing: Bool ) async  {
+        func updateState( text: Binding<String>, itemsUpdated: Bool, fontSize:CGFloat, showLine:Bool, isEditing: Bool ) async  {
             
             var requestReload = false
+            
+            if itemsUpdated  {
+                if textCancellable == nil {
+                    textCancellable = itemsWillChange
+//                        .throttle(for: .milliseconds(1000), scheduler: DispatchQueue.main, latest: true)
+                        .debounce(for: .milliseconds(1000), scheduler: DispatchQueue.main)
+                        .receive(on: RunLoop.main)
+                        .sink { [weak self] value in
+                            if let self {
+                                text.wrappedValue = value
+                                self.text = value
+                            }
+                        }
+                }
+                itemsWillChange.send( self.items.joined(separator: "\n") )
+            }
+            else if self.text != text.wrappedValue {
+                requestReload = true
+                items = text.wrappedValue.split(whereSeparator: \.isNewline).map { String($0) }
+                self.text  = text.wrappedValue
+            }
             
             if self.fontSize != fontSize {
                 requestReload = true
@@ -483,7 +510,7 @@ extension LineEditorView {
                 return
             }
 
-            linesController.items[ indexPath.row ] = text
+            linesController.items[ indexPath.row ] = text ; owner.itemsUpdated = true
         }
      
         internal func _shouldChangeCharactersIn(_ textField: LineEditorTextField, in range: NSRange, replacementString string: String) -> Bool {
@@ -564,7 +591,6 @@ extension LineEditorView {
     
 }
 
-
 // MARK: - Coordinator::Update Model
 extension LineEditorView.Coordinator  {
     
@@ -586,10 +612,10 @@ extension LineEditorView.Coordinator  {
     func moveItem( in tableView: UITableView, fromRow sourceIndexPath: IndexPath, toRow destinationIndexPath: IndexPath ) async {
         
         if destinationIndexPath.isLast( in: linesController.items ) {
-            linesController.items.append( linesController.items.remove(at: sourceIndexPath.row) )
+            linesController.items.append( linesController.items.remove(at: sourceIndexPath.row) ); owner.itemsUpdated = true
         }
         else {
-            linesController.items.swapAt(sourceIndexPath.row, destinationIndexPath.row)
+            linesController.items.swapAt(sourceIndexPath.row, destinationIndexPath.row); owner.itemsUpdated = true
         }
         
         await reloadVisibleRows(startingFrom: min( sourceIndexPath, destinationIndexPath ) )
@@ -598,7 +624,7 @@ extension LineEditorView.Coordinator  {
 
     func deleteItem( in tableView: UITableView, atRow indexPath: IndexPath ) async {
 
-        linesController.items.remove(at: indexPath.row)
+        linesController.items.remove(at: indexPath.row); owner.itemsUpdated = true
         await MainActor.run {
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
@@ -606,15 +632,14 @@ extension LineEditorView.Coordinator  {
     }
     
     func updateItem( at index: Int, withText text: String ) {
-        let item = text
-        linesController.items[ index ] = item
+        linesController.items[ index ] = text ; owner.itemsUpdated = true
     }
         
     func addItemAbove( in tableView: UITableView, atRow indexPath: IndexPath) async {
 
         let newItem = ""
 
-        linesController.items.insert( newItem, at: indexPath.row )
+        linesController.items.insert( newItem, at: indexPath.row ); owner.itemsUpdated = true
         await MainActor.run {
             tableView.insertRows(at: [indexPath], with: .automatic )
         }
@@ -633,7 +658,9 @@ extension LineEditorView.Coordinator  {
                 linesController.items.insert( item, at: i.row)
                 return i
             }
-
+        
+        owner.itemsUpdated = !indexes.isEmpty
+        
         await MainActor.run {
             tableView.insertRows(at: indexes, with: .automatic )
         }
@@ -649,10 +676,10 @@ extension LineEditorView.Coordinator  {
         let newIndexPath = indexPath.add( row: 1 )
 
         if  newIndexPath.isEndIndex( in: linesController.items ) {
-            linesController.items.append( newItem)
+            linesController.items.append( newItem); owner.itemsUpdated = true
         }
         else {
-            linesController.items.insert( newItem, at: newIndexPath.row )
+            linesController.items.insert( newItem, at: newIndexPath.row ); owner.itemsUpdated = true
         }
     
         await MainActor.run {
