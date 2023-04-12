@@ -12,7 +12,7 @@ import LineEditor
 struct LineEditorApp: App {
     let line_begin_keywords = "(?i)^\\s*(usecase|actor|object|participant|boundary|control|entity|database|create|component|interface|package|node|folder|frame|cloud|annotation|class|state|autonumber|group|box|rectangle|namespace|partition|archimate|sprite)\\b"
 
-    @State private var selectedTab = "syntax"
+    @State private var selectedTab = "standard"
     
     var body: some Scene {
         WindowGroup {

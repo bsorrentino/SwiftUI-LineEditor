@@ -41,12 +41,15 @@ struct SyntaxEditorView : View {
         //NavigationStack {
         NavigationView {
 
-            LineEditorView<Item, KeyboardSymbol, CustomLineEditorTextFieldVC>(items: $model.items, fontSize: $fontSize, showLine: $showLine) {
-                onHide, onPressSymbol in
+            LineEditorView<KeyboardSymbol, CustomLineEditorTextFieldVC>(text: $model.text,
+                                                                        fontSize: $fontSize,
+                                                                        showLine: $showLine,
+                                                                        keyboardView: { (onHide, onPressSymbol) in
+                
                 SimpleLineEditorKeyboard(onHide: onHide, onPressSymbol: onPressSymbol )
                     .environment(\.keyboardSelectedTab, $selectedTab)
                     
-            }
+            })
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Line Editor")
             .toolbar {
@@ -62,14 +65,9 @@ struct SyntaxEditorView : View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .onChange(of: model.items ) {newValue in
+        .onChange(of: model.text ) {newValue in
             
-//            print( "model.count: \(newValue.count)")
-            
-            newValue.enumerated().forEach { ( index, item ) in
-                print( "\(index)) \(item.rawValue)" )
-            }
-            
+           print( "model.text: \(newValue)")
             
         }
         
