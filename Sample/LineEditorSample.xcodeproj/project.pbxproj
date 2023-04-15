@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		A0143778291C09D700FD0A69 /* LineEditorSampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0143777291C09D700FD0A69 /* LineEditorSampleUITests.swift */; };
 		A0646C3429A29A440042E421 /* SyntaxTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0646C3329A29A440042E421 /* SyntaxTextField.swift */; };
+		A084B52929EADCDD0043B853 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329092902A1C600E0C47C /* Model.swift */; };
+		A084B52A29EADCFC0043B853 /* LineEditorKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F329192902A9DE00E0C47C /* LineEditorKeyboard.swift */; };
+		A084B52B29EADD1C0043B853 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A0BFBA97290D4B3D008340E3 /* Localizable.strings */; };
+		A084B52D29EADD450043B853 /* SyntaxTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0646C3329A29A440042E421 /* SyntaxTextField.swift */; };
+		A084B52E29EADD450043B853 /* LineEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F3290B2902A1C600E0C47C /* LineEditorApp.swift */; };
+		A084B53029EADD4C0043B853 /* LineEditor in Frameworks */ = {isa = PBXBuildFile; productRef = A084B52F29EADD4C0043B853 /* LineEditor */; };
 		A0A387FE29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */; };
 		A0A387FF29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A387FD29B4E9EA007EBF0F /* StandardEditorView.swift */; };
 		A0A3880129B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A3880029B4EA98007EBF0F /* SyntaxEditorView.swift */; };
@@ -56,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A084B53029EADD4C0043B853 /* LineEditor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +156,9 @@
 				A014377C291C09D700FD0A69 /* PBXTargetDependency */,
 			);
 			name = LineEditorSampleUITests;
+			packageProductDependencies = (
+				A084B52F29EADD4C0043B853 /* LineEditor */,
+			);
 			productName = LineEditorSampleUITests;
 			productReference = A0143775291C09D700FD0A69 /* LineEditorSampleUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -217,6 +227,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A084B52B29EADD1C0043B853 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +248,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A084B52D29EADD450043B853 /* SyntaxTextField.swift in Sources */,
+				A084B52E29EADD450043B853 /* LineEditorApp.swift in Sources */,
+				A084B52A29EADCFC0043B853 /* LineEditorKeyboard.swift in Sources */,
+				A084B52929EADCDD0043B853 /* Model.swift in Sources */,
 				A0A3880229B4EA98007EBF0F /* SyntaxEditorView.swift in Sources */,
 				A0A387FF29B4E9EA007EBF0F /* StandardEditorView.swift in Sources */,
 				A0143778291C09D700FD0A69 /* LineEditorSampleUITests.swift in Sources */,
@@ -524,6 +539,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A084B52F29EADD4C0043B853 /* LineEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LineEditor;
+		};
 		A0F329172902A2EF00E0C47C /* LineEditor */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LineEditor;
