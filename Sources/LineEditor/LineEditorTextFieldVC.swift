@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  LineEditorTextFieldVC.swift
 //  
 //
 //  Created by Bartolomeo Sorrentino on 25/02/23.
@@ -52,7 +52,7 @@ public class LineEditorTextFieldVC : UIViewController, LineEditorTextField {
     
     public override func viewDidLoad() {
         textField.delegate = self
-        
+        textField.pasteDelegate = self
         textField.accessibilityIdentifier = "LineText"
         textField.keyboardType = .asciiCapable
         textField.autocapitalizationType = .none
@@ -62,11 +62,22 @@ public class LineEditorTextFieldVC : UIViewController, LineEditorTextField {
 
     }
 
-    open override func paste(_ sender: Any?) {
-        isPastingContent = true
-        super.paste(sender)
-    }
+//    open override func paste(_ sender: Any?) {
+//        isPastingContent = true
+//        super.paste(sender)
+//    }
 
+}
+
+// MARK: - UITextPasteDelegate
+extension LineEditorTextFieldVC : UITextPasteDelegate {
+    
+    public func textPasteConfigurationSupporting(_ textPasteConfigurationSupporting: UITextPasteConfigurationSupporting, transform item: UITextPasteItem) {
+        
+        isPastingContent = true
+        
+        item.setDefaultResult()
+    }
 }
 
 // MARK: - UITextFieldDelegate
