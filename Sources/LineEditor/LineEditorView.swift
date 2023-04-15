@@ -238,7 +238,7 @@ extension LineEditorView {
         func update( at indexPath: IndexPath,
                      coordinator: LineEditorView.Coordinator ) {
             
-            lineNumber.text             = "\(indexPath.row)"
+//            lineNumber.text             = "\(indexPath.row)"
             lineNumber.isHidden         = !coordinator.linesController.showLine
             textFieldLeadingContraintsRelativeToLineNumber?.isActive = !lineNumber.isHidden
             
@@ -445,6 +445,7 @@ extension LineEditorView {
 
         }
         
+        
         // MARK: - UITableViewDataSource
         
         public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -497,6 +498,14 @@ extension LineEditorView {
         
         // MARK: - UITableViewDelegate
 
+        public func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+            
+            if let line = cell as? Line {
+                
+                line.lineNumber.text = "\(indexPath.row)"
+            }
+        }
+        
         public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
             ROW_HEIGHT
         }
