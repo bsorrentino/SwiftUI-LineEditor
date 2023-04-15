@@ -533,25 +533,23 @@ extension LineEditorView {
 
         public func textField(_ textField: LineEditorTextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
             
-            if let lines = textField.getAndResetPastingContent() {
+            if let lines = textField.getAndResetPastingContent(), let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: linesController.items ) {
 
-                let result = self._shouldChangeCharactersIn(textField, in: range, replacementString: lines[0])
+                
+                Task {
 
-                if lines.count > 1,  let indexPath = textField.indexPath(for: self.linesController.tableView)?.testValid( in: linesController.items ) {
+                    let elements = lines.dropFirst()
                     
-                    let elements = lines.enumerated().compactMap { (index, value) in
-                        ( index == 0 ) ? nil : value
-                    }
+                    await self.addItemsBelow(elements, in: self.linesController.tableView, atRow: indexPath)
                     
-                    Task {
-                        await self.addItemsBelow(elements, in: self.linesController.tableView, atRow: indexPath)
-                    }
                 }
                 
-                return result
+                textField.text = textField.text?.appending( lines[0] )
+                
+                return false
 
             }
-            
+                        
             return  self._shouldChangeCharactersIn(textField, in: range, replacementString: string)
         }
         
@@ -637,9 +635,7 @@ extension LineEditorView.Coordinator  {
         
     func addItemAbove( in tableView: UITableView, atRow indexPath: IndexPath) async {
 
-        let newItem = ""
-
-        linesController.items.insert( newItem, at: indexPath.row ); owner.itemsUpdated = true
+        linesController.items.insert( "", at: indexPath.row ); owner.itemsUpdated = true
         await MainActor.run {
             tableView.insertRows(at: [indexPath], with: .automatic )
         }
@@ -649,7 +645,7 @@ extension LineEditorView.Coordinator  {
         
     }
 
-    func addItemsBelow( _ items: [String], in tableView: UITableView, atRow indexPath: IndexPath ) async  {
+    func addItemsBelow<T: Sequence>( _ items: T, in tableView: UITableView, atRow indexPath: IndexPath) async where T.Element == String {
         
         let indexes = items
             .enumerated()
@@ -659,7 +655,9 @@ extension LineEditorView.Coordinator  {
                 return i
             }
         
-        owner.itemsUpdated = !indexes.isEmpty
+        guard  !indexes.isEmpty else { return }
+        
+        owner.itemsUpdated = true
         
         await MainActor.run {
             tableView.insertRows(at: indexes, with: .automatic )
@@ -668,9 +666,8 @@ extension LineEditorView.Coordinator  {
         await self.reloadVisibleRows( startingFrom: indexes.last! )
         
         self.linesController.becomeTextFieldFirstResponder(at: indexes.last! , withRetries: 5)
-
     }
-    
+        
     private func addItemBelow( _ newItem: String, in tableView: UITableView, atRow indexPath: IndexPath ) async {
         
         let newIndexPath = indexPath.add( row: 1 )
